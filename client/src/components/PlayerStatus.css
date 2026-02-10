@@ -1,0 +1,204 @@
+.player-status {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  padding: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.status-section {
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.status-section:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.status-section h3 {
+  color: #888;
+  font-size: 0.85rem;
+  margin: 0 0 10px 0;
+  text-transform: uppercase;
+}
+
+.cash-display {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #4CAF50;
+}
+
+.inventory-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.inventory-item {
+  display: grid;
+  grid-template-columns: 30px 1fr 50px 60px;
+  align-items: center;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+}
+
+.item-icon {
+  font-size: 1.2rem;
+}
+
+.item-name {
+  color: #ccc;
+  text-transform: capitalize;
+}
+
+.item-count {
+  color: #fff;
+  font-weight: bold;
+  text-align: right;
+}
+
+.item-value {
+  color: #888;
+  text-align: right;
+  font-size: 0.85rem;
+}
+
+.inventory-total {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
+  color: #4CAF50;
+  font-weight: bold;
+}
+
+.sets-display {
+  text-align: center;
+  padding: 15px;
+  background: rgba(255, 215, 0, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+.sets-count {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #ffd700;
+}
+
+.sets-label {
+  color: #888;
+  font-size: 0.85rem;
+  margin-top: 5px;
+}
+
+.sets-value {
+  color: #ffd700;
+  font-weight: 600;
+  margin-top: 5px;
+}
+
+.orders-list {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.no-orders {
+  color: #666;
+  text-align: center;
+  padding: 20px;
+  font-style: italic;
+}
+
+.order-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  margin-bottom: 5px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  border-left: 3px solid;
+}
+
+.order-item.buy {
+  border-left-color: #4CAF50;
+}
+
+.order-item.sell {
+  border-left-color: #ff6b6b;
+}
+
+.order-info {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.order-side {
+  font-weight: bold;
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.order-item.buy .order-side {
+  background: rgba(76, 175, 80, 0.2);
+  color: #4CAF50;
+}
+
+.order-item.sell .order-side {
+  background: rgba(255, 107, 107, 0.2);
+  color: #ff6b6b;
+}
+
+.order-qty {
+  color: #fff;
+  font-weight: bold;
+}
+
+.order-product {
+  color: #ccc;
+  text-transform: capitalize;
+}
+
+.order-price {
+  color: #888;
+}
+
+.cancel-btn {
+  background: rgba(255, 107, 107, 0.2);
+  border: none;
+  color: #ff6b6b;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.2s;
+}
+
+.cancel-btn:hover {
+  background: #ff6b6b;
+  color: white;
+}
+
+.summary .summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 0;
+  color: #ccc;
+}
+
+.summary .summary-row.total {
+  padding-top: 10px;
+  margin-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-weight: bold;
+  color: #fff;
+  font-size: 1.1rem;
+}

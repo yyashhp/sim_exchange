@@ -1,0 +1,121 @@
+.order-book {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.order-book-header {
+  padding: 12px 15px;
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.order-book-header h3 {
+  margin: 0;
+  color: #fff;
+  font-size: 1rem;
+}
+
+.spread {
+  color: #888;
+  font-size: 0.8rem;
+}
+
+.order-book-body {
+  padding: 10px;
+}
+
+.level-header {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 10px;
+  color: #666;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.level {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: background 0.2s;
+  border-radius: 4px;
+  margin: 2px 0;
+}
+
+.level:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.level-bar {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  border-radius: 4px;
+  opacity: 0.2;
+}
+
+.ask .level-bar {
+  background: #ff6b6b;
+}
+
+.bid .level-bar {
+  background: #4CAF50;
+}
+
+.price {
+  position: relative;
+  z-index: 1;
+  font-weight: 600;
+}
+
+.ask .price {
+  color: #ff6b6b;
+}
+
+.bid .price {
+  color: #4CAF50;
+}
+
+.quantity {
+  position: relative;
+  z-index: 1;
+  color: #ccc;
+}
+
+.best-prices {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+  margin: 5px 0;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+}
+
+.best-ask {
+  color: #ff6b6b;
+  font-weight: 600;
+}
+
+.best-bid {
+  color: #4CAF50;
+  font-weight: 600;
+}
+
+.empty-level {
+  padding: 15px;
+  text-align: center;
+  color: #666;
+  font-style: italic;
+}
+
+.asks, .bids {
+  min-height: 120px;
+}

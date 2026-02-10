@@ -1,0 +1,182 @@
+.trading-game {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 25px;
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.header-left h1 {
+  color: #fff;
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.player-name {
+  padding: 5px 12px;
+  background: rgba(100, 108, 255, 0.2);
+  border-radius: 15px;
+  color: #646cff;
+  font-weight: 500;
+}
+
+.timer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.timer-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.timer-value {
+  font-size: 2rem;
+  font-weight: bold;
+  font-family: 'Courier New', monospace;
+}
+
+.header-right {
+  display: flex;
+  gap: 20px;
+}
+
+.quick-stats {
+  display: flex;
+  gap: 20px;
+}
+
+.quick-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.quick-stat .stat-label {
+  font-size: 0.7rem;
+  color: #888;
+  text-transform: uppercase;
+}
+
+.quick-stat .stat-value {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #fff;
+}
+
+/* Main Content */
+.game-content {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 320px 350px;
+  gap: 20px;
+  padding: 20px;
+  overflow: hidden;
+}
+
+@media (max-width: 1400px) {
+  .game-content {
+    grid-template-columns: 1fr 280px;
+  }
+
+  .sidebar {
+    display: none;
+  }
+}
+
+@media (max-width: 1000px) {
+  .game-content {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Order Books Section */
+.order-books-section {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.order-books-section h2 {
+  color: #fff;
+  margin: 0 0 15px 0;
+  font-size: 1.1rem;
+}
+
+.order-books-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+  flex: 1;
+  overflow: auto;
+}
+
+@media (max-width: 700px) {
+  .order-books-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Trading Section */
+.trading-section {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Sidebar */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  overflow-y: auto;
+}
+
+/* Rules Reminder */
+.rules-reminder {
+  padding: 12px 25px;
+  background: rgba(0, 0, 0, 0.3);
+  color: #888;
+  font-size: 0.85rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.rules-reminder strong {
+  color: #ffd700;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}

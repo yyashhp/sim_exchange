@@ -1,0 +1,25 @@
+{
+  "gameDuration": 180,
+  "startingCash": 100,
+  "maxPlayers": 8,
+  "products": ["bread", "veggies", "cheese", "meat"],
+  "scrapValues": {
+    "bread": 2,
+    "veggies": 4,
+    "cheese": 6,
+    "meat": 8
+  },
+  "setValue": 30,
+  "setRecipe": {
+    "bread": 1,
+    "veggies": 1,
+    "cheese": 1,
+    "meat": 1
+  },
+  "startingInventoryTargetTotalValue": 100,
+  "startingInventoryRandomizationFactor": 0.3,
+  "showOrderNames": false,
+  "minOrderSize": 1,
+  "maxOrderSize": 100,
+  "tickSize": 1
+}

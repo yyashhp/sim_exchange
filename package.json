@@ -1,0 +1,15 @@
+{
+  "name": "sandwich-trading-exchange",
+  "version": "1.0.0",
+  "description": "Real-time multiplayer trading game",
+  "scripts": {
+    "start": "npm run start:server & npm run start:client",
+    "start:server": "cd server && npm start",
+    "start:client": "cd client && npm start",
+    "install:all": "cd server && npm install && cd ../client && npm install",
+    "build": "cd client && npm run build"
+  },
+  "keywords": ["trading", "game", "multiplayer", "real-time"],
+  "author": "",
+  "license": "MIT"
+}

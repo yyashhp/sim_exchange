@@ -1,0 +1,76 @@
+.recent-trades {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  padding: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.recent-trades h3 {
+  margin: 0 0 15px 0;
+  color: #fff;
+  font-size: 1rem;
+}
+
+.trades-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.trade-item {
+  display: grid;
+  grid-template-columns: 70px 60px 1fr 60px;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  margin-bottom: 4px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.trade-item.my-trade {
+  background: rgba(100, 108, 255, 0.15);
+  border-left: 2px solid #646cff;
+}
+
+.trade-time {
+  color: #666;
+  font-size: 0.75rem;
+}
+
+.trade-product {
+  color: #ccc;
+  text-transform: capitalize;
+}
+
+.trade-details {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.trade-qty {
+  color: #fff;
+  font-weight: bold;
+}
+
+.trade-at {
+  color: #666;
+}
+
+.trade-price {
+  color: #4CAF50;
+  font-weight: 600;
+}
+
+.trade-value {
+  color: #888;
+  text-align: right;
+}
+
+.no-trades {
+  text-align: center;
+  color: #666;
+  padding: 20px;
+  font-style: italic;
+}
