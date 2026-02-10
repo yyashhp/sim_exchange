@@ -4,6 +4,12 @@ A real-time multiplayer trading game where players trade ingredients to form com
 
 ## Quick Start
 
+### Quickest: 
+
+```bash
+./start.sh
+```
+
 ### 1. Start the Server
 
 ```bash
