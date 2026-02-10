@@ -41,7 +41,7 @@ npm install  # First time only
 npm start
 ```
 
-This opens the game at `http://localhost:3000`
+This opens the game at `http://localhost:3001`
 
 ### 3. Connect from Other Devices
 
