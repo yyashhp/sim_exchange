@@ -301,11 +301,8 @@ class MatchingEngine {
       remaining -= fillQty;
     }
 
-    // If not enough liquidity, estimate with a high price
-    if (remaining > 0) {
-      cost += remaining * 100; // High estimate for missing liquidity
-    }
-
+    // Only return cost for available liquidity
+    // Unfilled portion will become an open market order
     return cost;
   }
 

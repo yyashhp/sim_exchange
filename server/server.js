@@ -247,13 +247,22 @@ io.on('connection', (socket) => {
 
     const { product, side, orderType, quantity, price } = data;
 
+    // Validate quantity has at most 2 decimal places
+    const parsedQuantity = parseFloat(quantity);
+    if (isNaN(parsedQuantity) || parsedQuantity <= 0) {
+      return callback({ success: false, error: 'Invalid quantity' });
+    }
+    if (parsedQuantity !== Math.round(parsedQuantity * 100) / 100) {
+      return callback({ success: false, error: 'Quantity must have at most 2 decimal places' });
+    }
+
     const result = matchingEngine.submitOrder(
       gameManager.currentGame.gameId,
       player,
       product,
       side,
       orderType,
-      parseInt(quantity),
+      parsedQuantity,
       price ? parseFloat(price) : null
     );
 

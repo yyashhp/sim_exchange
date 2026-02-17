@@ -73,11 +73,11 @@ class GameManager {
       }
     }
 
-    // If we're under target, try to add cheaper items
+    // If we're under target, try to add items in random order
     while (currentValue < targetValue) {
-      // Find the cheapest item we can add
+      // Shuffle products to avoid bias toward cheaper items
       let added = false;
-      for (const product of [...products].sort((a, b) => scrapValues[a] - scrapValues[b])) {
+      for (const product of [...products].sort(() => Math.random() - 0.5)) {
         if (currentValue + scrapValues[product] <= maxValue) {
           inventory[product]++;
           currentValue += scrapValues[product];
