@@ -1,0 +1,162 @@
+.spectator-view {
+  min-height: 100vh;
+  background: #0d1117;
+  display: flex;
+  flex-direction: column;
+  color: #fff;
+}
+
+/* ── Header ── */
+
+.spectator-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.spectator-header .header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.spectator-header h1 {
+  font-size: 1.4rem;
+  margin: 0;
+  color: #fff;
+}
+
+.spectator-badge {
+  background: rgba(100, 100, 255, 0.2);
+  border: 1px solid rgba(100, 100, 255, 0.5);
+  color: #9fa8da;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.spectator-timer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.timer-label {
+  font-size: 0.7rem;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.timer-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.ended-label {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #9fa8da;
+}
+
+.header-right {
+  min-width: 120px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-reset {
+  padding: 10px 22px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+  color: #fff;
+  transition: all 0.2s;
+}
+
+.btn-reset:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(76, 175, 80, 0.4);
+}
+
+.btn-reset:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Main content ── */
+
+.spectator-content {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 16px;
+  padding: 16px 24px;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.spectator-books {
+  overflow-y: auto;
+}
+
+.spectator-books h2 {
+  color: #888;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 12px;
+}
+
+.spectator-books-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.spectator-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+/* Disable pointer on order book rows so spectators can't "click to trade" */
+.spectator-books .order-row {
+  cursor: default !important;
+}
+
+/* ── Info bar ── */
+
+.spectator-info-bar {
+  padding: 8px 24px;
+  background: rgba(100, 100, 255, 0.06);
+  border-top: 1px solid rgba(100, 100, 255, 0.15);
+  color: #666;
+  font-size: 0.8rem;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* ── Responsive ── */
+
+@media (max-width: 900px) {
+  .spectator-content {
+    grid-template-columns: 1fr;
+  }
+
+  .spectator-books-grid {
+    grid-template-columns: 1fr;
+  }
+}

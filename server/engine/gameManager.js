@@ -106,7 +106,10 @@ class GameManager {
       return { success: false, error: 'Cannot join: game is ' + this.currentGame.status };
     }
 
-    if (this.currentGame.playerIds.length >= this.config.maxPlayers) {
+    // Only count human players toward the limit (bots are excluded when bot feature is active)
+    const humanCount = this.dataStore.getPlayersByGame(this.currentGame.gameId)
+      .filter(p => !p.isBot).length;
+    if (humanCount >= this.config.maxPlayers) {
       return { success: false, error: 'Game is full' };
     }
 
@@ -303,6 +306,17 @@ class GameManager {
     }
 
     return { success: true, leaderboard };
+  }
+
+  /**
+   * Returns true when the human player slots are all taken.
+   * Bots (isBot=true) are not counted toward the limit.
+   */
+  isLobbyFull() {
+    if (!this.currentGame || this.currentGame.status !== 'lobby') return false;
+    const humanCount = this.dataStore.getPlayersByGame(this.currentGame.gameId)
+      .filter(p => !p.isBot).length;
+    return humanCount >= this.config.maxPlayers;
   }
 
   /**
