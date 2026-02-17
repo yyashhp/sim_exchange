@@ -1,12 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { useSocket } from '../context/SocketContext';
 import './Lobby.css';
 
 const Lobby: React.FC = () => {
-  const { gameState, config, createGame, joinGame, startGame, playerState } = useSocket();
+  const { gameState, config, createGame, joinGame, startGame, configureBots, playerState } = useSocket();
   const [playerName, setPlayerName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [botCount, setBotCount] = useState(0);
+  const [botError, setBotError] = useState('');
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleBotCountChange = useCallback((value: number) => {
+    setBotCount(value);
+    setBotError('');
+    // Debounce so we don't spam the server while dragging the slider
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      const result: any = await configureBots(value);
+      if (!result.success) setBotError(result.error || 'Failed to configure bots');
+    }, 300);
+  }, [configureBots]);
 
   const handleCreateGame = async () => {
     setLoading(true);
@@ -148,12 +162,41 @@ const Lobby: React.FC = () => {
         <div className="players-list">
           <h3>Players ({gameState.playerCount} / {gameState.maxPlayers})</h3>
           {gameState.players.map(p => (
-            <div key={p.playerId} className={`player-chip ${p.playerId === playerState.playerId ? 'you' : ''}`}>
-              {p.name} {p.playerId === gameState.hostPlayerId && '👑'}
+            <div
+              key={p.playerId}
+              className={`player-chip ${p.playerId === playerState.playerId ? 'you' : ''} ${p.isBot ? 'bot' : ''}`}
+            >
+              {p.isBot ? '🤖 ' : ''}{p.name}
+              {p.playerId === gameState.hostPlayerId && ' 👑'}
               {p.playerId === playerState.playerId && ' (You)'}
             </div>
           ))}
         </div>
+
+        {isHost && (
+          <div className="bot-config">
+            <h3>Add Bots</h3>
+            <p className="bot-config-desc">
+              Bots trade rationally based on ingredient values. Add them to enable solo play or fill the lobby.
+            </p>
+            <div className="bot-slider-row">
+              <span className="bot-slider-label">0</span>
+              <input
+                type="range"
+                min={0}
+                max={config?.bots?.maxBots ?? 10}
+                value={botCount}
+                onChange={e => handleBotCountChange(parseInt(e.target.value, 10))}
+                className="bot-slider"
+              />
+              <span className="bot-slider-label">{config?.bots?.maxBots ?? 10}</span>
+            </div>
+            <p className="bot-count-display">
+              {botCount === 0 ? 'No bots' : `${botCount} bot${botCount > 1 ? 's' : ''}`}
+            </p>
+            {botError && <p className="error">{botError}</p>}
+          </div>
+        )}
 
         {isHost ? (
           <button
@@ -168,7 +211,7 @@ const Lobby: React.FC = () => {
         )}
 
         {isHost && gameState.playerCount < 2 && (
-          <p className="info">Need at least 2 players to start</p>
+          <p className="info">Need at least 2 players to start — add bots above or wait for more players</p>
         )}
 
         {error && <p className="error">{error}</p>}

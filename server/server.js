@@ -19,6 +19,7 @@ const config = require('./config.json');
 const { DataStore } = require('./models');
 const GameManager = require('./engine/gameManager');
 const MatchingEngine = require('./engine/matchingEngine');
+const BotManager = require('./bots/botManager');
 
 // Initialize
 const app = express();
@@ -42,6 +43,7 @@ app.use(express.static(clientBuildPath));
 const dataStore = new DataStore();
 const gameManager = new GameManager(dataStore, config);
 const matchingEngine = new MatchingEngine(dataStore, config);
+const botManager = new BotManager(dataStore, gameManager, matchingEngine, config);
 
 // Map socket IDs to player IDs
 const socketToPlayer = new Map();
@@ -165,6 +167,33 @@ io.on('connection', (socket) => {
     callback(result);
   });
 
+  // Configure bots (host only, lobby only)
+  socket.on('configureBots', (data, callback) => {
+    if (typeof callback !== 'function') return;
+    const playerId = socketToPlayer.get(socket.id);
+    if (!playerId) {
+      return callback({ success: false, error: 'Not in game' });
+    }
+    if (!gameManager.currentGame) {
+      return callback({ success: false, error: 'No active game' });
+    }
+    if (gameManager.currentGame.hostPlayerId !== playerId) {
+      return callback({ success: false, error: 'Only the host can configure bots' });
+    }
+    if (gameManager.currentGame.status !== 'lobby') {
+      return callback({ success: false, error: 'Can only configure bots before the game starts' });
+    }
+
+    const count = parseInt(data?.botCount ?? 0, 10);
+    if (isNaN(count) || count < 0 || count > (config.bots?.maxBots ?? 10)) {
+      return callback({ success: false, error: `Bot count must be 0–${config.bots?.maxBots ?? 10}` });
+    }
+
+    botManager.configureBots(gameManager.currentGame.gameId, count);
+    io.emit('gameState', gameManager.getGameState());
+    callback({ success: true, botCount: botManager.getBotCount() });
+  });
+
   // Start the game (host only)
   socket.on('startGame', (callback) => {
     if (typeof callback !== 'function') return;
@@ -176,6 +205,9 @@ io.on('connection', (socket) => {
     const result = gameManager.startGame(playerId);
 
     if (result.success) {
+      // Start bot trading
+      botManager.startBotTrading();
+
       // Broadcast game start
       io.emit('gameStarted', {
         gameState: gameManager.getGameState(),
@@ -202,6 +234,10 @@ io.on('connection', (socket) => {
   // Reset game (go back to lobby)
   socket.on('resetGame', (callback) => {
     if (typeof callback !== 'function') return;
+
+    // Stop bots and clean up
+    const gameId = gameManager.currentGame?.gameId;
+    botManager.cleanup(gameId);
 
     // Clear all player mappings
     socketToPlayer.clear();
@@ -387,6 +423,32 @@ io.on('connection', (socket) => {
   });
 });
 
+// ===== BOT EVENTS =====
+
+// After a bot places an order, broadcast market updates to all clients
+botManager.onBotAction = (result) => {
+  // Always refresh order books
+  io.emit('orderBooks', matchingEngine.getAllOrderBooks());
+
+  if (result.trades && result.trades.length > 0) {
+    io.emit('trades', result.trades.map(t => t.toJSON()));
+    io.emit('leaderboard', gameManager.getLiveLeaderboard());
+
+    // Notify human players whose positions changed
+    for (const trade of result.trades) {
+      for (const humanId of [trade.buyerId, trade.sellerId]) {
+        const socketId = playerToSocket.get(humanId);
+        if (socketId) {
+          const playerSocket = io.sockets.sockets.get(socketId);
+          if (playerSocket) {
+            playerSocket.emit('playerState', gameManager.getPlayerState(humanId));
+          }
+        }
+      }
+    }
+  }
+};
+
 // ===== GAME EVENTS =====
 
 // Timer tick - broadcast remaining time
@@ -401,6 +463,9 @@ gameManager.onTimerTick = (remainingTime) => {
 
 // Game end - broadcast final results
 gameManager.onGameEnd = (leaderboard) => {
+  // Stop bots
+  botManager.stopBotTrading();
+
   // Cancel all orders
   if (gameManager.currentGame) {
     matchingEngine.cancelAllOrders(gameManager.currentGame.gameId);

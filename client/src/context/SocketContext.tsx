@@ -18,6 +18,7 @@ interface SocketContextType {
   createGame: () => Promise<any>;
   joinGame: (name: string) => Promise<any>;
   startGame: () => Promise<any>;
+  configureBots: (count: number) => Promise<any>;
   placeOrder: (product: string, side: 'buy' | 'sell', orderType: 'limit' | 'market', quantity: number, price?: number) => Promise<any>;
   cancelOrder: (orderId: string) => Promise<any>;
   resetGame: () => Promise<any>;
@@ -145,6 +146,12 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     });
   }, [socket]);
 
+  const configureBots = useCallback((count: number) => {
+    return new Promise((resolve) => {
+      socket?.emit('configureBots', { botCount: count }, resolve);
+    });
+  }, [socket]);
+
   const placeOrder = useCallback((
     product: string,
     side: 'buy' | 'sell',
@@ -183,6 +190,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     createGame,
     joinGame,
     startGame,
+    configureBots,
     placeOrder,
     cancelOrder,
     resetGame,
