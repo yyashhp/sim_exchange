@@ -9,14 +9,14 @@
     "cheese": 6,
     "meat": 8
   },
-  "setValue": 30,
+  "setValue": 32,
   "setRecipe": {
-    "bread": 1,
+    "bread": 2,
     "veggies": 1,
     "cheese": 1,
     "meat": 1
   },
-  "startingInventoryTargetTotalValue": 100,
+  "startingInventoryTargetTotalValue": 300,
   "startingInventoryRandomizationFactor": 0.3,
   "showOrderNames": false,
   "minOrderSize": 1,
