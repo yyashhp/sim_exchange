@@ -5,11 +5,19 @@ import TradingPanel from './TradingPanel';
 import PlayerStatus from './PlayerStatus';
 import Leaderboard from './Leaderboard';
 import RecentTrades from './RecentTrades';
+import { setMuted, isMuted } from '../audio/sounds';
 import './TradingGame.css';
 
 const TradingGame: React.FC = () => {
   const { config, orderBooks, remainingTime, playerState } = useSocket();
   const [selectedProduct, setSelectedProduct] = useState(config?.products[0] || 'bread');
+  const [muted, setMutedState] = useState(isMuted);
+
+  const toggleMute = () => {
+    const next = !muted;
+    setMuted(next);
+    setMutedState(next);
+  };
   const [selectedPrice, setSelectedPrice] = useState<number | null>(null);
   const [selectedSide, setSelectedSide] = useState<'buy' | 'sell' | null>(null);
 
@@ -54,6 +62,14 @@ const TradingGame: React.FC = () => {
               <span className="stat-value">🥪 {playerState?.completeSets || 0}</span>
             </div>
           </div>
+          <button
+            className={`mute-btn${muted ? ' muted' : ''}`}
+            onClick={toggleMute}
+            title={muted ? 'Unmute sounds' : 'Mute sounds'}
+            aria-label={muted ? 'Unmute sounds' : 'Mute sounds'}
+          >
+            {muted ? '🔇' : '🔊'}
+          </button>
         </div>
       </header>
 
