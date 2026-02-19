@@ -451,9 +451,45 @@ io.on('connection', (socket) => {
       // Cancel all player's orders
       matchingEngine.cancelAllPlayerOrders(playerId);
 
-      // Remove from game if in lobby
+      // Remove from game if in lobby, then handle host transfer
       if (gameManager.currentGame?.status === 'lobby') {
+        const wasHost = gameManager.currentGame.hostPlayerId === playerId;
         gameManager.leaveGame(playerId);
+
+        if (wasHost && gameManager.currentGame) {
+          // Promote the next human player in the lobby to host
+          const remaining = gameManager.currentGame.playerIds
+            .filter(id => {
+              const p = dataStore.getPlayer(id);
+              return p && !p.isBot;
+            });
+
+          if (remaining.length > 0) {
+            gameManager.currentGame.hostPlayerId = remaining[0];
+            dataStore.saveGame(gameManager.currentGame);
+            console.log(`[SOCKET] Host transferred to ${remaining[0].slice(0, 8)}`);
+
+            // Notify the new host via their socket
+            const newHostSocketId = playerToSocket.get(remaining[0]);
+            if (newHostSocketId) {
+              const newHostSocket = io.sockets.sockets.get(newHostSocketId);
+              if (newHostSocket) {
+                newHostSocket.emit('playerState', gameManager.getPlayerState(remaining[0]));
+              }
+            }
+          } else {
+            // No human players left — tear down the game so the lobby resets
+            botManager.cleanup(gameManager.currentGame.gameId);
+            gameManager.currentGame = null;
+            if (gameManager.gameTimer) {
+              clearInterval(gameManager.gameTimer);
+              gameManager.gameTimer = null;
+            }
+            matchingEngine.reset();
+            spectatorSockets.clear();
+            console.log('[SOCKET] No players left in lobby — game torn down');
+          }
+        }
       }
 
       // Clean up mappings
