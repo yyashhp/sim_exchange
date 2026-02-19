@@ -223,6 +223,86 @@
   letter-spacing: 0.04em;
 }
 
+.player-chip.bot {
+  background: rgba(100, 100, 255, 0.15);
+  border: 1px solid rgba(100, 100, 255, 0.4);
+  color: #aab;
+  font-style: italic;
+}
+
+/* ── Bot configuration section ── */
+
+.bot-config {
+  margin: 20px 0;
+  padding: 18px 20px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  border: 1px solid rgba(100, 100, 255, 0.2);
+  text-align: left;
+}
+
+.bot-config h3 {
+  color: #9fa8da;
+  margin-bottom: 6px;
+}
+
+.bot-config-desc {
+  color: #777;
+  font-size: 0.85rem;
+  margin-bottom: 14px;
+}
+
+.bot-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bot-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.15);
+  outline: none;
+  cursor: pointer;
+}
+
+.bot-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #7986cb;
+  cursor: pointer;
+}
+
+.bot-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #7986cb;
+  cursor: pointer;
+  border: none;
+}
+
+.bot-slider-label {
+  color: #666;
+  font-size: 0.85rem;
+  min-width: 16px;
+  text-align: center;
+}
+
+.bot-count-display {
+  text-align: center;
+  color: #9fa8da;
+  font-weight: 600;
+  margin-top: 8px;
+  font-size: 0.95rem;
+}
+
 .waiting-message {
   color: #888;
   font-style: italic;

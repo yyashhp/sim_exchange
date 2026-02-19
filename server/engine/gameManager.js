@@ -196,8 +196,15 @@ class GameManager {
       return { success: false, error: 'Game is already ' + this.currentGame.status };
     }
 
+    const allPlayers = this.dataStore.getPlayersByGame(this.currentGame.gameId);
+    const humanCount = allPlayers.filter(p => !p.isBot).length;
+
+    if (humanCount < 1) {
+      return { success: false, error: 'Need at least 1 human player to start' };
+    }
+
     if (this.currentGame.playerIds.length < 2) {
-      return { success: false, error: 'Need at least 2 players to start' };
+      return { success: false, error: 'Need at least 2 players to start (add bots or wait for more players)' };
     }
 
     // Start the game
@@ -338,7 +345,8 @@ class GameManager {
       maxPlayers: this.config.maxPlayers,
       players: players.map(p => ({
         playerId: p.playerId,
-        name: p.name
+        name: p.name,
+        isBot: p.isBot ?? false
       }))
     };
   }
@@ -376,6 +384,7 @@ class GameManager {
     const leaderboard = players.map(p => ({
       playerId: p.playerId,
       name: p.name,
+      isBot: p.isBot ?? false,
       estimatedValue: p.cash + p.getInventoryScrapValue(this.config.scrapValues),
       completeSets: p.getCompleteSets(this.config.setRecipe)
     }));
@@ -393,7 +402,8 @@ class GameManager {
       scrapValues: this.config.scrapValues,
       setValue: this.config.setValue,
       setRecipe: this.config.setRecipe,
-      maxPlayers: this.config.maxPlayers
+      maxPlayers: this.config.maxPlayers,
+      bots: this.config.bots
     };
   }
 }

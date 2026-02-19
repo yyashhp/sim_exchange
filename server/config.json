@@ -21,5 +21,13 @@
   "showOrderNames": false,
   "minOrderSize": 1,
   "maxOrderSize": 100,
-  "tickSize": 1
+  "tickSize": 1,
+  "bots": {
+    "maxBots": 10,
+    "tradingInterval": {
+      "min": 3000,
+      "max": 8000
+    },
+    "marginAboveScrap": 0.2
+  }
 }
