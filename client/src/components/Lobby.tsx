@@ -3,7 +3,7 @@ import { useSocket } from '../context/SocketContext';
 import './Lobby.css';
 
 const Lobby: React.FC = () => {
-  const { gameState, config, createGame, joinGame, startGame, playerState } = useSocket();
+  const { gameState, config, createGame, joinGame, startGame, joinAsSpectator, playerState, isSpectator } = useSocket();
   const [playerName, setPlayerName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -13,24 +13,17 @@ const Lobby: React.FC = () => {
     setError('');
     const result: any = await createGame();
     setLoading(false);
-    if (!result.success) {
-      setError(result.error);
-    }
+    if (!result.success) setError(result.error);
   };
 
   const handleJoinGame = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!playerName.trim()) {
-      setError('Please enter your name');
-      return;
-    }
+    if (!playerName.trim()) { setError('Please enter your name'); return; }
     setLoading(true);
     setError('');
     const result: any = await joinGame(playerName.trim());
     setLoading(false);
-    if (!result.success) {
-      setError(result.error);
-    }
+    if (!result.success) setError(result.error);
   };
 
   const handleStartGame = async () => {
@@ -38,14 +31,21 @@ const Lobby: React.FC = () => {
     setError('');
     const result: any = await startGame();
     setLoading(false);
-    if (!result.success) {
-      setError(result.error);
-    }
+    if (!result.success) setError(result.error);
+  };
+
+  const handleWatchAsSpectator = async () => {
+    setLoading(true);
+    setError('');
+    const result: any = await joinAsSpectator();
+    setLoading(false);
+    if (!result.success) setError(result.error || 'Could not join as spectator');
   };
 
   const isHost = playerState && gameState && gameState.hostPlayerId === playerState.playerId;
+  const lobbyFull = gameState && gameState.playerCount >= gameState.maxPlayers;
 
-  // No game exists - show create game
+  // ── No game exists ──────────────────────────────────────────────
   if (!gameState) {
     return (
       <div className="lobby">
@@ -53,11 +53,7 @@ const Lobby: React.FC = () => {
           <h1>🥪 Sandwich Trading Exchange</h1>
           <p className="subtitle">Trade ingredients, form sandwiches, maximize profit!</p>
 
-          <button
-            className="btn btn-primary btn-large"
-            onClick={handleCreateGame}
-            disabled={loading}
-          >
+          <button className="btn btn-primary btn-large" onClick={handleCreateGame} disabled={loading}>
             {loading ? 'Creating...' : 'Create New Game'}
           </button>
 
@@ -84,31 +80,69 @@ const Lobby: React.FC = () => {
     );
   }
 
-  // Game exists but player hasn't joined
+  // ── Spectator in lobby (voluntary or overflow) ──────────────────
+  if (isSpectator && !playerState) {
+    return (
+      <div className="lobby">
+        <div className="lobby-card">
+          <h1>🥪 Game Lobby</h1>
+          <div className="spectator-lobby-badge">👁 You are spectating</div>
+          <p className="subtitle">The game will start soon. You'll watch when it begins.</p>
+
+          <div className="players-list">
+            <h3>Players ({gameState.playerCount} / {gameState.maxPlayers})</h3>
+            {gameState.players.map(p => (
+              <div key={p.playerId} className="player-chip">
+                {p.name} {p.playerId === gameState.hostPlayerId && '👑'}
+              </div>
+            ))}
+          </div>
+
+          <p className="waiting-message">Waiting for host to start the game...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Game exists, user hasn't joined yet ─────────────────────────
   if (!playerState) {
     return (
       <div className="lobby">
         <div className="lobby-card">
           <h1>🥪 Join Game</h1>
-          <p className="subtitle">{gameState.playerCount} / {gameState.maxPlayers} players</p>
+          <p className="subtitle">
+            {lobbyFull
+              ? 'Lobby is full — join as a spectator to watch'
+              : `${gameState.playerCount} / ${gameState.maxPlayers} players`}
+          </p>
 
-          <form onSubmit={handleJoinGame}>
-            <input
-              type="text"
-              placeholder="Enter your name"
-              value={playerName}
-              onChange={(e) => setPlayerName(e.target.value)}
-              maxLength={20}
-              disabled={loading}
-            />
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={loading || !playerName.trim()}
-            >
-              {loading ? 'Joining...' : 'Join Game'}
-            </button>
-          </form>
+          {!lobbyFull && (
+            <form onSubmit={handleJoinGame}>
+              <input
+                type="text"
+                placeholder="Enter your name"
+                value={playerName}
+                onChange={(e) => setPlayerName(e.target.value)}
+                maxLength={20}
+                disabled={loading}
+              />
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={loading || !playerName.trim()}
+              >
+                {loading ? 'Joining...' : 'Join Game'}
+              </button>
+            </form>
+          )}
+
+          <button
+            className="btn btn-spectate"
+            onClick={handleWatchAsSpectator}
+            disabled={loading}
+          >
+            {loading ? 'Joining...' : '👁 Watch as Spectator'}
+          </button>
 
           {error && <p className="error">{error}</p>}
 
@@ -123,7 +157,7 @@ const Lobby: React.FC = () => {
     );
   }
 
-  // Player is in lobby
+  // ── Player is in lobby, waiting for game to start ───────────────
   return (
     <div className="lobby">
       <div className="lobby-card">

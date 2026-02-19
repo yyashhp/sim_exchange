@@ -183,6 +183,46 @@
   border: 1px solid #4CAF50;
 }
 
+/* Spectator watch button */
+.btn-spectate {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 11px 20px;
+  border-radius: 10px;
+  border: 1px solid rgba(100, 100, 255, 0.4);
+  background: rgba(100, 100, 255, 0.1);
+  color: #9fa8da;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-spectate:hover:not(:disabled) {
+  background: rgba(100, 100, 255, 0.2);
+  border-color: rgba(100, 100, 255, 0.7);
+}
+
+.btn-spectate:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Spectator badge shown in lobby when already spectating */
+.spectator-lobby-badge {
+  display: inline-block;
+  margin: 0 auto 16px;
+  padding: 6px 18px;
+  background: rgba(100, 100, 255, 0.15);
+  border: 1px solid rgba(100, 100, 255, 0.4);
+  border-radius: 20px;
+  color: #9fa8da;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
 .waiting-message {
   color: #888;
   font-style: italic;

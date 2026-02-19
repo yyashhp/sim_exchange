@@ -47,6 +47,9 @@ const matchingEngine = new MatchingEngine(dataStore, config);
 const socketToPlayer = new Map();
 const playerToSocket = new Map();
 
+// Track spectator sockets (no associated player)
+const spectatorSockets = new Set();
+
 // Get local IP address for LAN play
 function getLocalIP() {
   const interfaces = os.networkInterfaces();
@@ -105,10 +108,13 @@ io.on('connection', (socket) => {
   socket.emit('gameState', gameState);
   socket.emit('config', gameManager.getPublicConfig());
 
-  // If game is running, also send order books and leaderboard
+  // Late-join: if a game is already running, this socket becomes a spectator automatically
   if (gameState && gameState.status === 'running') {
+    spectatorSockets.add(socket.id);
+    socket.emit('spectatorMode', true);
     socket.emit('orderBooks', matchingEngine.getAllOrderBooks());
     socket.emit('leaderboard', gameManager.getLiveLeaderboard());
+    console.log(`[SOCKET] ${socket.id} auto-assigned as spectator (game in progress)`);
   }
 
   // ===== GAME MANAGEMENT =====
@@ -129,6 +135,25 @@ io.on('connection', (socket) => {
     callback(result);
   });
 
+  // Voluntarily join as a spectator (lobby only)
+  socket.on('joinAsSpectator', (callback) => {
+    if (typeof callback !== 'function') return;
+
+    // Can't spectate if already a player
+    if (socketToPlayer.has(socket.id)) {
+      return callback({ success: false, error: 'Already joined as a player' });
+    }
+
+    if (!gameManager.currentGame) {
+      return callback({ success: false, error: 'No active game to spectate' });
+    }
+
+    spectatorSockets.add(socket.id);
+    socket.emit('spectatorMode', true);
+    console.log(`[SOCKET] ${socket.id} joined as spectator (voluntary)`);
+    callback({ success: true });
+  });
+
   // Join the game
   socket.on('joinGame', (data, callback) => {
     if (typeof callback !== 'function') return;
@@ -136,6 +161,22 @@ io.on('connection', (socket) => {
 
     if (!playerName || playerName.trim().length === 0) {
       return callback({ success: false, error: 'Name is required' });
+    }
+
+    // If game is already running, auto-spectate (should already be set on connect,
+    // but handle the case where they emit joinGame anyway)
+    if (gameManager.currentGame?.status === 'running') {
+      spectatorSockets.add(socket.id);
+      socket.emit('spectatorMode', true);
+      return callback({ success: true, spectator: true, message: 'Game in progress — joined as spectator' });
+    }
+
+    // If lobby is full (human players only), auto-spectate
+    if (gameManager.isLobbyFull()) {
+      spectatorSockets.add(socket.id);
+      socket.emit('spectatorMode', true);
+      console.log(`[SOCKET] ${socket.id} auto-spectating — lobby full`);
+      return callback({ success: true, spectator: true, message: 'Lobby is full — joined as spectator' });
     }
 
     const result = gameManager.joinGame(playerName.trim());
@@ -216,6 +257,10 @@ io.on('connection', (socket) => {
 
     // Reset matching engine
     matchingEngine.reset();
+
+    // Clear spectators and tell all clients to exit spectator mode
+    spectatorSockets.clear();
+    io.emit('spectatorMode', false);
 
     // Broadcast null game state so all clients return to lobby
     io.emit('gameState', null);
@@ -361,6 +406,9 @@ io.on('connection', (socket) => {
   // ===== DISCONNECT =====
 
   socket.on('disconnect', () => {
+    // Remove from spectators if applicable
+    spectatorSockets.delete(socket.id);
+
     const playerId = socketToPlayer.get(socket.id);
 
     if (playerId) {

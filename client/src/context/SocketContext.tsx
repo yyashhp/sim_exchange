@@ -14,11 +14,13 @@ interface SocketContextType {
   recentTrades: Trade[];
   remainingTime: number;
   finalScore: PnLBreakdown | null;
+  isSpectator: boolean;
 
   // Actions
   createGame: () => Promise<any>;
   joinGame: (name: string) => Promise<any>;
   startGame: () => Promise<any>;
+  joinAsSpectator: () => Promise<any>;
   placeOrder: (product: string, side: 'buy' | 'sell', orderType: 'limit' | 'market', quantity: number, price?: number) => Promise<any>;
   cancelOrder: (orderId: string) => Promise<any>;
   resetGame: () => Promise<any>;
@@ -49,6 +51,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
   const [recentTrades, setRecentTrades] = useState<Trade[]>([]);
   const [remainingTime, setRemainingTime] = useState(0);
   const [finalScore, setFinalScore] = useState<PnLBreakdown | null>(null);
+  const [isSpectator, setIsSpectator] = useState(false);
 
   useEffect(() => {
     // Connect to server - use current host for LAN play
@@ -74,7 +77,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
       if (data?.remainingTime) {
         setRemainingTime(Math.round(data.remainingTime));
       }
-      // If game state is null (reset), clear player state
+      // If game state is null (reset), clear all state including spectator flag
       if (!data) {
         setPlayerState(null);
         setOrderBooks({});
@@ -82,7 +85,12 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
         setRecentTrades([]);
         setFinalScore(null);
         setRemainingTime(0);
+        setIsSpectator(false);
       }
+    });
+
+    newSocket.on('spectatorMode', (active: boolean) => {
+      setIsSpectator(active);
     });
 
     newSocket.on('playerState', (data: PlayerState) => {
@@ -158,6 +166,12 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     });
   }, [socket]);
 
+  const joinAsSpectator = useCallback(() => {
+    return new Promise((resolve) => {
+      socket?.emit('joinAsSpectator', resolve);
+    });
+  }, [socket]);
+
   const placeOrder = useCallback((
     product: string,
     side: 'buy' | 'sell',
@@ -193,9 +207,11 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     recentTrades,
     remainingTime,
     finalScore,
+    isSpectator,
     createGame,
     joinGame,
     startGame,
+    joinAsSpectator,
     placeOrder,
     cancelOrder,
     resetGame,
