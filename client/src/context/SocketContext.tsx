@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { GameConfig, GameState, PlayerState, OrderBookDepth, LeaderboardEntry, Trade, PnLBreakdown } from '../types';
+import { playTradeSound, playGameStart, playGameEnd, playCountdownTick } from '../audio/sounds';
 
 interface SocketContextType {
   socket: Socket | null;
@@ -97,11 +98,21 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     });
 
     newSocket.on('timer', (data: { remainingTime: number }) => {
-      setRemainingTime(Math.round(data.remainingTime));
+      const t = Math.round(data.remainingTime);
+      setRemainingTime(t);
+      // Play countdown tick for the final 10 seconds (not on 0 — that's the end buzzer)
+      if (t > 0 && t <= 10) {
+        playCountdownTick(t);
+      }
     });
 
     newSocket.on('trades', (data: Trade[]) => {
       setRecentTrades(prev => [...data, ...prev].slice(0, 50));
+      // Play a distinct sound per trade; stagger simultaneous trades by 30 ms
+      // so they don't perfectly cancel each other out.
+      data.forEach((trade, i) => {
+        playTradeSound(trade.product, i * 0.03);
+      });
     });
 
     newSocket.on('gameStarted', (data: { gameState: GameState; orderBooks: Record<string, OrderBookDepth> }) => {
@@ -109,11 +120,13 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
       setOrderBooks(data.orderBooks);
       setFinalScore(null);
       setRecentTrades([]);
+      playGameStart();
     });
 
     newSocket.on('gameEnded', (data: { leaderboard: LeaderboardEntry[]; gameState: GameState }) => {
       setGameState(data.gameState);
       setLeaderboard(data.leaderboard);
+      playGameEnd();
     });
 
     newSocket.on('finalScore', (data: PnLBreakdown) => {
