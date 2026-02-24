@@ -75,9 +75,9 @@ function tone(o: ToneOptions): void {
   const releaseAt = t0 + duration * releaseStart;
   const stopAt = t0 + duration;
 
-  function makeOsc(freq: number, gain: number) {
-    const osc = c.createOscillator();
-    const gainNode = c.createGain();
+  function makeOsc(ac: AudioContext, freq: number, gain: number) {
+    const osc = ac.createOscillator();
+    const gainNode = ac.createGain();
 
     osc.type = type;
     osc.frequency.setValueAtTime(freq, t0);
@@ -91,17 +91,17 @@ function tone(o: ToneOptions): void {
     gainNode.gain.exponentialRampToValueAtTime(0.0001, stopAt);
 
     osc.connect(gainNode);
-    gainNode.connect(c.destination);
+    gainNode.connect(ac.destination);
 
     osc.start(t0);
     osc.stop(stopAt + 0.05);
   }
 
-  makeOsc(startFreq, peakGain);
+  makeOsc(c, startFreq, peakGain);
 
   if (detuneCents !== undefined) {
     const ratio = Math.pow(2, detuneCents / 1200);
-    makeOsc(startFreq * ratio, peakGain * detuneGain);
+    makeOsc(c, startFreq * ratio, peakGain * detuneGain);
   }
 }
 
