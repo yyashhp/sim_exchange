@@ -9,7 +9,15 @@
     "install:all": "cd server && npm install && cd ../client && npm install",
     "build": "cd client && npm run build"
   },
-  "keywords": ["trading", "game", "multiplayer", "real-time"],
+  "keywords": [
+    "trading",
+    "game",
+    "multiplayer",
+    "real-time"
+  ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "better-sqlite3": "^12.6.2"
+  }
 }
