@@ -16,7 +16,7 @@ const os = require('os');
 const config = require('./config.json');
 
 // Import modules
-const { DataStore, SQLiteAdapter } = require('./models');
+const { DataStore, SQLiteAdapter, PostgreSQLAdapter } = require('./models');
 const GameManager = require('./engine/gameManager');
 const MatchingEngine = require('./engine/matchingEngine');
 
@@ -39,16 +39,43 @@ const clientBuildPath = path.join(__dirname, '../client/build');
 app.use(express.static(clientBuildPath));
 
 // Initialize data store and engines
-// Use SQLite for persistent storage (set USE_MEMORY_DB=true to use in-memory storage for testing)
+// Auto-detect database adapter:
+// 1. If DATABASE_URL is set → Use PostgreSQL (centralized cloud database)
+// 2. If USE_MEMORY_DB=true → Use in-memory (no persistence)
+// 3. Otherwise → Use SQLite (local file database)
 const useMemoryDb = process.env.USE_MEMORY_DB === 'true';
-const dbAdapter = useMemoryDb ? null : new SQLiteAdapter();
+const usePg = !!process.env.DATABASE_URL;
+
+let dbAdapter = null;
+if (!useMemoryDb) {
+  if (usePg) {
+    dbAdapter = new PostgreSQLAdapter();
+    console.log('[SERVER] 🌐 Using PostgreSQL - CENTRALIZED cloud database');
+    console.log('[SERVER] 📊 All game servers will share the same data!');
+  } else {
+    dbAdapter = new SQLiteAdapter();
+    console.log('[SERVER] 💾 Using SQLite - LOCAL file database');
+    console.log('[SERVER] 📁 Data stored on this machine only');
+    console.log('[SERVER] 💡 Tip: Set DATABASE_URL to use centralized PostgreSQL');
+  }
+}
+
 const dataStore = new DataStore(dbAdapter);
 
-if (!useMemoryDb) {
-  console.log('[SERVER] Using SQLite database for persistent storage');
-  console.log('[SERVER] Database stats:', dbAdapter.getStats());
-} else {
-  console.log('[SERVER] Using in-memory storage (data will not persist)');
+if (useMemoryDb) {
+  console.log('[SERVER] 🧠 Using in-memory storage (data will not persist)');
+} else if (dbAdapter) {
+  // Get stats (async for PostgreSQL)
+  const statsPromise = dbAdapter.getStats();
+  if (statsPromise instanceof Promise) {
+    statsPromise.then(stats => {
+      console.log('[SERVER] Database stats:', stats);
+    }).catch(err => {
+      console.error('[SERVER] Failed to get stats:', err.message);
+    });
+  } else {
+    console.log('[SERVER] Database stats:', statsPromise);
+  }
 }
 
 const gameManager = new GameManager(dataStore, config);
@@ -466,24 +493,19 @@ server.listen(PORT, '0.0.0.0', () => {
 });
 
 // Graceful shutdown
-process.on('SIGINT', () => {
+const gracefulShutdown = async () => {
   console.log('\n[SERVER] Shutting down gracefully...');
   if (dbAdapter && !useMemoryDb) {
-    dbAdapter.close();
+    const closeResult = dbAdapter.close();
+    if (closeResult instanceof Promise) {
+      await closeResult;
+    }
   }
   server.close(() => {
     console.log('[SERVER] Server closed');
     process.exit(0);
   });
-});
+};
 
-process.on('SIGTERM', () => {
-  console.log('\n[SERVER] Shutting down gracefully...');
-  if (dbAdapter && !useMemoryDb) {
-    dbAdapter.close();
-  }
-  server.close(() => {
-    console.log('[SERVER] Server closed');
-    process.exit(0);
-  });
-});
+process.on('SIGINT', gracefulShutdown);
+process.on('SIGTERM', gracefulShutdown);
