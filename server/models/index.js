@@ -616,12 +616,14 @@ class OrderBook {
   }
 }
 
-// Import SQLiteAdapter
+// Import database adapters
 const SQLiteAdapter = require('../database/SQLiteAdapter');
+const PostgreSQLAdapter = require('../database/PostgreSQLAdapter');
 
 module.exports = {
   InMemoryAdapter,
   SQLiteAdapter,
+  PostgreSQLAdapter,
   DataStore,
   Game,
   Player,
