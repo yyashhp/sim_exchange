@@ -274,7 +274,7 @@ class Game {
 // ==================== PLAYER MODEL ====================
 
 class Player {
-  constructor(gameId, name, startingCash, startingInventory) {
+  constructor(gameId, name, startingCash, startingInventory, isBot = false) {
     this.playerId = uuidv4();
     this.gameId = gameId;
     this.name = name;
@@ -288,6 +288,7 @@ class Player {
     this.finalScore = null;
     this.pnlBreakdown = null;
     this.joinedAt = new Date().toISOString();
+    this.isBot = isBot;
   }
 
   getInventoryScrapValue(scrapValues) {
@@ -363,7 +364,8 @@ class Player {
     return {
       playerId: this.playerId,
       name: this.name,
-      finalScore: this.finalScore
+      finalScore: this.finalScore,
+      isBot: this.isBot
     };
   }
 
@@ -381,7 +383,8 @@ class Player {
       initialInventory: this.initialInventory,
       finalScore: this.finalScore,
       pnlBreakdown: this.pnlBreakdown,
-      joinedAt: this.joinedAt
+      joinedAt: this.joinedAt,
+      isBot: this.isBot
     };
   }
 }

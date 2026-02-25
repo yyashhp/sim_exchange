@@ -19,6 +19,7 @@ const config = require('./config.json');
 const { DataStore } = require('./models');
 const GameManager = require('./engine/gameManager');
 const MatchingEngine = require('./engine/matchingEngine');
+const BotManager = require('./bots/botManager');
 
 // Initialize
 const app = express();
@@ -42,10 +43,14 @@ app.use(express.static(clientBuildPath));
 const dataStore = new DataStore();
 const gameManager = new GameManager(dataStore, config);
 const matchingEngine = new MatchingEngine(dataStore, config);
+const botManager = new BotManager(dataStore, gameManager, matchingEngine, config);
 
 // Map socket IDs to player IDs
 const socketToPlayer = new Map();
 const playerToSocket = new Map();
+
+// Track spectator sockets (no associated player)
+const spectatorSockets = new Set();
 
 // Get local IP address for LAN play
 function getLocalIP() {
@@ -105,10 +110,13 @@ io.on('connection', (socket) => {
   socket.emit('gameState', gameState);
   socket.emit('config', gameManager.getPublicConfig());
 
-  // If game is running, also send order books and leaderboard
+  // Late-join: if a game is already running, this socket becomes a spectator automatically
   if (gameState && gameState.status === 'running') {
+    spectatorSockets.add(socket.id);
+    socket.emit('spectatorMode', true);
     socket.emit('orderBooks', matchingEngine.getAllOrderBooks());
     socket.emit('leaderboard', gameManager.getLiveLeaderboard());
+    console.log(`[SOCKET] ${socket.id} auto-assigned as spectator (game in progress)`);
   }
 
   // ===== GAME MANAGEMENT =====
@@ -129,6 +137,25 @@ io.on('connection', (socket) => {
     callback(result);
   });
 
+  // Voluntarily join as a spectator (lobby only)
+  socket.on('joinAsSpectator', (callback) => {
+    if (typeof callback !== 'function') return;
+
+    // Can't spectate if already a player
+    if (socketToPlayer.has(socket.id)) {
+      return callback({ success: false, error: 'Already joined as a player' });
+    }
+
+    if (!gameManager.currentGame) {
+      return callback({ success: false, error: 'No active game to spectate' });
+    }
+
+    spectatorSockets.add(socket.id);
+    socket.emit('spectatorMode', true);
+    console.log(`[SOCKET] ${socket.id} joined as spectator (voluntary)`);
+    callback({ success: true });
+  });
+
   // Join the game
   socket.on('joinGame', (data, callback) => {
     if (typeof callback !== 'function') return;
@@ -136,6 +163,22 @@ io.on('connection', (socket) => {
 
     if (!playerName || playerName.trim().length === 0) {
       return callback({ success: false, error: 'Name is required' });
+    }
+
+    // If game is already running, auto-spectate (should already be set on connect,
+    // but handle the case where they emit joinGame anyway)
+    if (gameManager.currentGame?.status === 'running') {
+      spectatorSockets.add(socket.id);
+      socket.emit('spectatorMode', true);
+      return callback({ success: true, spectator: true, message: 'Game in progress — joined as spectator' });
+    }
+
+    // If lobby is full (human players only), auto-spectate
+    if (gameManager.isLobbyFull()) {
+      spectatorSockets.add(socket.id);
+      socket.emit('spectatorMode', true);
+      console.log(`[SOCKET] ${socket.id} auto-spectating — lobby full`);
+      return callback({ success: true, spectator: true, message: 'Lobby is full — joined as spectator' });
     }
 
     const result = gameManager.joinGame(playerName.trim());
@@ -165,6 +208,33 @@ io.on('connection', (socket) => {
     callback(result);
   });
 
+  // Configure bots (host only, lobby only)
+  socket.on('configureBots', (data, callback) => {
+    if (typeof callback !== 'function') return;
+    const playerId = socketToPlayer.get(socket.id);
+    if (!playerId) {
+      return callback({ success: false, error: 'Not in game' });
+    }
+    if (!gameManager.currentGame) {
+      return callback({ success: false, error: 'No active game' });
+    }
+    if (gameManager.currentGame.hostPlayerId !== playerId) {
+      return callback({ success: false, error: 'Only the host can configure bots' });
+    }
+    if (gameManager.currentGame.status !== 'lobby') {
+      return callback({ success: false, error: 'Can only configure bots before the game starts' });
+    }
+
+    const count = parseInt(data?.botCount ?? 0, 10);
+    if (isNaN(count) || count < 0 || count > (config.bots?.maxBots ?? 10)) {
+      return callback({ success: false, error: `Bot count must be 0–${config.bots?.maxBots ?? 10}` });
+    }
+
+    botManager.configureBots(gameManager.currentGame.gameId, count);
+    io.emit('gameState', gameManager.getGameState());
+    callback({ success: true, botCount: botManager.getBotCount() });
+  });
+
   // Start the game (host only)
   socket.on('startGame', (callback) => {
     if (typeof callback !== 'function') return;
@@ -176,6 +246,9 @@ io.on('connection', (socket) => {
     const result = gameManager.startGame(playerId);
 
     if (result.success) {
+      // Start bot trading
+      botManager.startBotTrading();
+
       // Broadcast game start
       io.emit('gameStarted', {
         gameState: gameManager.getGameState(),
@@ -203,6 +276,10 @@ io.on('connection', (socket) => {
   socket.on('resetGame', (callback) => {
     if (typeof callback !== 'function') return;
 
+    // Stop bots and clean up
+    const gameId = gameManager.currentGame?.gameId;
+    botManager.cleanup(gameId);
+
     // Clear all player mappings
     socketToPlayer.clear();
     playerToSocket.clear();
@@ -216,6 +293,10 @@ io.on('connection', (socket) => {
 
     // Reset matching engine
     matchingEngine.reset();
+
+    // Clear spectators and tell all clients to exit spectator mode
+    spectatorSockets.clear();
+    io.emit('spectatorMode', false);
 
     // Broadcast null game state so all clients return to lobby
     io.emit('gameState', null);
@@ -361,15 +442,54 @@ io.on('connection', (socket) => {
   // ===== DISCONNECT =====
 
   socket.on('disconnect', () => {
+    // Remove from spectators if applicable
+    spectatorSockets.delete(socket.id);
+
     const playerId = socketToPlayer.get(socket.id);
 
     if (playerId) {
       // Cancel all player's orders
       matchingEngine.cancelAllPlayerOrders(playerId);
 
-      // Remove from game if in lobby
+      // Remove from game if in lobby, then handle host transfer
       if (gameManager.currentGame?.status === 'lobby') {
+        const wasHost = gameManager.currentGame.hostPlayerId === playerId;
         gameManager.leaveGame(playerId);
+
+        if (wasHost && gameManager.currentGame) {
+          // Promote the next human player in the lobby to host
+          const remaining = gameManager.currentGame.playerIds
+            .filter(id => {
+              const p = dataStore.getPlayer(id);
+              return p && !p.isBot;
+            });
+
+          if (remaining.length > 0) {
+            gameManager.currentGame.hostPlayerId = remaining[0];
+            dataStore.saveGame(gameManager.currentGame);
+            console.log(`[SOCKET] Host transferred to ${remaining[0].slice(0, 8)}`);
+
+            // Notify the new host via their socket
+            const newHostSocketId = playerToSocket.get(remaining[0]);
+            if (newHostSocketId) {
+              const newHostSocket = io.sockets.sockets.get(newHostSocketId);
+              if (newHostSocket) {
+                newHostSocket.emit('playerState', gameManager.getPlayerState(remaining[0]));
+              }
+            }
+          } else {
+            // No human players left — tear down the game so the lobby resets
+            botManager.cleanup(gameManager.currentGame.gameId);
+            gameManager.currentGame = null;
+            if (gameManager.gameTimer) {
+              clearInterval(gameManager.gameTimer);
+              gameManager.gameTimer = null;
+            }
+            matchingEngine.reset();
+            spectatorSockets.clear();
+            console.log('[SOCKET] No players left in lobby — game torn down');
+          }
+        }
       }
 
       // Clean up mappings
@@ -387,6 +507,32 @@ io.on('connection', (socket) => {
   });
 });
 
+// ===== BOT EVENTS =====
+
+// After a bot places an order, broadcast market updates to all clients
+botManager.onBotAction = (result) => {
+  // Always refresh order books
+  io.emit('orderBooks', matchingEngine.getAllOrderBooks());
+
+  if (result.trades && result.trades.length > 0) {
+    io.emit('trades', result.trades.map(t => t.toJSON()));
+    io.emit('leaderboard', gameManager.getLiveLeaderboard());
+
+    // Notify human players whose positions changed
+    for (const trade of result.trades) {
+      for (const humanId of [trade.buyerId, trade.sellerId]) {
+        const socketId = playerToSocket.get(humanId);
+        if (socketId) {
+          const playerSocket = io.sockets.sockets.get(socketId);
+          if (playerSocket) {
+            playerSocket.emit('playerState', gameManager.getPlayerState(humanId));
+          }
+        }
+      }
+    }
+  }
+};
+
 // ===== GAME EVENTS =====
 
 // Timer tick - broadcast remaining time
@@ -401,6 +547,9 @@ gameManager.onTimerTick = (remainingTime) => {
 
 // Game end - broadcast final results
 gameManager.onGameEnd = (leaderboard) => {
+  // Stop bots
+  botManager.stopBotTrading();
+
   // Cancel all orders
   if (gameManager.currentGame) {
     matchingEngine.cancelAllOrders(gameManager.currentGame.gameId);

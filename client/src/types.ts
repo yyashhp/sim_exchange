@@ -7,6 +7,11 @@ export interface GameConfig {
   setValue: number;
   setRecipe: Record<string, number>;
   maxPlayers: number;
+  bots?: {
+    maxBots: number;
+    tradingInterval: { min: number; max: number };
+    marginAboveScrap: number;
+  };
 }
 
 export interface GameState {
@@ -16,7 +21,7 @@ export interface GameState {
   remainingTime: number;
   playerCount: number;
   maxPlayers: number;
-  players: { playerId: string; name: string }[];
+  players: { playerId: string; name: string; isBot: boolean }[];
 }
 
 export interface PlayerState {
@@ -76,6 +81,7 @@ export interface OrderBookDepth {
 export interface LeaderboardEntry {
   playerId: string;
   name: string;
+  isBot?: boolean;
   estimatedValue?: number;
   completeSets?: number;
   totalScore?: number;

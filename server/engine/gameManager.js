@@ -106,7 +106,10 @@ class GameManager {
       return { success: false, error: 'Cannot join: game is ' + this.currentGame.status };
     }
 
-    if (this.currentGame.playerIds.length >= this.config.maxPlayers) {
+    // Only count human players toward the limit (bots are excluded when bot feature is active)
+    const humanCount = this.dataStore.getPlayersByGame(this.currentGame.gameId)
+      .filter(p => !p.isBot).length;
+    if (humanCount >= this.config.maxPlayers) {
       return { success: false, error: 'Game is full' };
     }
 
@@ -193,8 +196,15 @@ class GameManager {
       return { success: false, error: 'Game is already ' + this.currentGame.status };
     }
 
+    const allPlayers = this.dataStore.getPlayersByGame(this.currentGame.gameId);
+    const humanCount = allPlayers.filter(p => !p.isBot).length;
+
+    if (humanCount < 1) {
+      return { success: false, error: 'Need at least 1 human player to start' };
+    }
+
     if (this.currentGame.playerIds.length < 2) {
-      return { success: false, error: 'Need at least 2 players to start' };
+      return { success: false, error: 'Need at least 2 players to start (add bots or wait for more players)' };
     }
 
     // Start the game
@@ -306,6 +316,17 @@ class GameManager {
   }
 
   /**
+   * Returns true when the human player slots are all taken.
+   * Bots (isBot=true) are not counted toward the limit.
+   */
+  isLobbyFull() {
+    if (!this.currentGame || this.currentGame.status !== 'lobby') return false;
+    const humanCount = this.dataStore.getPlayersByGame(this.currentGame.gameId)
+      .filter(p => !p.isBot).length;
+    return humanCount >= this.config.maxPlayers;
+  }
+
+  /**
    * Get current game state
    */
   getGameState() {
@@ -324,7 +345,8 @@ class GameManager {
       maxPlayers: this.config.maxPlayers,
       players: players.map(p => ({
         playerId: p.playerId,
-        name: p.name
+        name: p.name,
+        isBot: p.isBot ?? false
       }))
     };
   }
@@ -362,6 +384,7 @@ class GameManager {
     const leaderboard = players.map(p => ({
       playerId: p.playerId,
       name: p.name,
+      isBot: p.isBot ?? false,
       estimatedValue: p.cash + p.getInventoryScrapValue(this.config.scrapValues),
       completeSets: p.getCompleteSets(this.config.setRecipe)
     }));
@@ -379,7 +402,8 @@ class GameManager {
       scrapValues: this.config.scrapValues,
       setValue: this.config.setValue,
       setRecipe: this.config.setRecipe,
-      maxPlayers: this.config.maxPlayers
+      maxPlayers: this.config.maxPlayers,
+      bots: this.config.bots
     };
   }
 }

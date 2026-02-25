@@ -4,14 +4,15 @@
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-  padding: 20px;
+  padding: 16px;
+  overflow-y: auto;
 }
 
 .lobby-card {
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(10px);
   border-radius: 20px;
-  padding: 40px;
+  padding: 24px;
   max-width: 500px;
   width: 100%;
   text-align: center;
@@ -20,24 +21,24 @@
 
 .lobby-card h1 {
   color: #fff;
-  margin-bottom: 10px;
-  font-size: 2rem;
+  margin-bottom: 6px;
+  font-size: 1.6rem;
 }
 
 .subtitle {
   color: #888;
-  margin-bottom: 30px;
+  margin-bottom: 16px;
 }
 
 .lobby-card input {
   width: 100%;
-  padding: 15px;
+  padding: 10px;
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   background: rgba(255, 255, 255, 0.1);
   color: #fff;
   font-size: 1rem;
-  margin-bottom: 15px;
+  margin-bottom: 10px;
 }
 
 .lobby-card input:focus {
@@ -88,8 +89,8 @@
 
 .game-rules {
   text-align: left;
-  margin-top: 30px;
-  padding: 20px;
+  margin-top: 16px;
+  padding: 12px 16px;
   background: rgba(0, 0, 0, 0.2);
   border-radius: 10px;
 }
@@ -110,10 +111,10 @@
 
 .player-info {
   text-align: left;
-  padding: 20px;
+  padding: 12px 16px;
   background: rgba(0, 0, 0, 0.2);
   border-radius: 10px;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .player-info h3 {
@@ -128,8 +129,8 @@
 
 .inventory-display {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  grid-template-columns: 1fr;
+  gap: 8px;
   margin: 15px 0;
 }
 
@@ -153,6 +154,7 @@
   color: #fff;
   font-weight: bold;
   font-size: 1.1rem;
+  padding: 4px 8px;
 }
 
 .inventory-value {
@@ -161,7 +163,7 @@
 }
 
 .players-list {
-  margin-top: 20px;
+  margin-top: 12px;
 }
 
 .players-list h3 {
@@ -181,6 +183,126 @@
 .player-chip.you {
   background: rgba(76, 175, 80, 0.3);
   border: 1px solid #4CAF50;
+}
+
+/* Spectator watch button */
+.btn-spectate {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 11px 20px;
+  border-radius: 10px;
+  border: 1px solid rgba(100, 100, 255, 0.4);
+  background: rgba(100, 100, 255, 0.1);
+  color: #9fa8da;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-spectate:hover:not(:disabled) {
+  background: rgba(100, 100, 255, 0.2);
+  border-color: rgba(100, 100, 255, 0.7);
+}
+
+.btn-spectate:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Spectator badge shown in lobby when already spectating */
+.spectator-lobby-badge {
+  display: inline-block;
+  margin: 0 auto 16px;
+  padding: 6px 18px;
+  background: rgba(100, 100, 255, 0.15);
+  border: 1px solid rgba(100, 100, 255, 0.4);
+  border-radius: 20px;
+  color: #9fa8da;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.player-chip.bot {
+  background: rgba(100, 100, 255, 0.15);
+  border: 1px solid rgba(100, 100, 255, 0.4);
+  color: #aab;
+  font-style: italic;
+}
+
+/* ── Bot configuration section ── */
+
+.bot-config {
+  margin: 20px 0;
+  padding: 18px 20px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  border: 1px solid rgba(100, 100, 255, 0.2);
+  text-align: left;
+}
+
+.bot-config h3 {
+  color: #9fa8da;
+  margin-bottom: 6px;
+}
+
+.bot-config-desc {
+  color: #777;
+  font-size: 0.85rem;
+  margin-bottom: 14px;
+}
+
+.bot-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bot-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.15);
+  outline: none;
+  cursor: pointer;
+}
+
+.bot-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #7986cb;
+  cursor: pointer;
+}
+
+.bot-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #7986cb;
+  cursor: pointer;
+  border: none;
+}
+
+.bot-slider-label {
+  color: #666;
+  font-size: 0.85rem;
+  min-width: 16px;
+  text-align: center;
+}
+
+.bot-count-display {
+  text-align: center;
+  color: #9fa8da;
+  font-weight: 600;
+  margin-top: 8px;
+  font-size: 0.95rem;
 }
 
 .waiting-message {

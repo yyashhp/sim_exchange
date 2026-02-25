@@ -82,19 +82,23 @@ class MatchingEngine {
       orderBook.addOrder(order);
       player.addOrder(order.orderId);
     } else if (order.remainingQuantity > 0 && orderType === 'market') {
-      // Market order with remaining quantity - no liquidity
-      // Keep it open to be filled when liquidity arrives
-      const orderBook = this.orderBooks.get(product);
-      // Convert to aggressive limit order at best price
-      if (side === 'buy') {
-        order.price = 999999; // Very high price to ensure it's at top of book
+      // Market order could not be fully filled — cancel the unfilled remainder.
+      // We do NOT park it in the book as an aggressive limit because the placer's
+      // reserved funds are only enough for the liquidity that existed at submission
+      // time; a later match at an arbitrary price would overdraw their account and
+      // cause an infinite loop in the matching engine.
+      if (order.filledQuantity > 0) {
+        // Partial fill already occurred — mark remainder cancelled, keep the fills
+        order.cancel();
+        this.dataStore.saveOrder(order);
+        console.log(`[ENGINE] Market order ${order.orderId} partially filled (${order.filledQuantity}); remainder cancelled`);
       } else {
-        order.price = 1; // Very low price to ensure it's at top of book
+        // No fill at all
+        order.cancel();
+        this.dataStore.saveOrder(order);
+        errors.push('No liquidity available for market order');
+        return { order, trades, errors };
       }
-      order.orderType = 'limit'; // Convert to limit
-      orderBook.addOrder(order);
-      player.addOrder(order.orderId);
-      console.log(`[ENGINE] Market order ${order.orderId} has ${order.remainingQuantity} remaining - converted to aggressive limit`);
     }
 
     // Save order to datastore
@@ -144,6 +148,17 @@ class MatchingEngine {
       const trade = this.executeTrade(incomingOrder, opposingOrder, incomingPlayer);
       if (trade) {
         trades.push(trade);
+      } else {
+        // executeTrade returns null when the resting order's owner no longer has
+        // the resources to honour it (e.g. a stale aggressive-limit converted from
+        // a market order). Cancel that resting order so the loop can advance;
+        // without this the while-loop spins forever on the same un-fillable pair.
+        const restingPlayer = this.dataStore.getPlayer(opposingOrder.playerId);
+        if (restingPlayer) restingPlayer.removeOrder(opposingOrder.orderId);
+        opposingOrder.cancel();
+        this.dataStore.saveOrder(opposingOrder);
+        orderBook.cleanup();
+        break;
       }
 
       // Clean up filled orders

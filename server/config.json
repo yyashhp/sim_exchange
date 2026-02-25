@@ -1,7 +1,7 @@
 {
   "gameDuration": 180,
   "startingCash": 100,
-  "maxPlayers": 8,
+  "maxPlayers": 50,
   "products": ["bread", "veggies", "cheese", "meat"],
   "scrapValues": {
     "bread": 2,
@@ -21,5 +21,13 @@
   "showOrderNames": false,
   "minOrderSize": 1,
   "maxOrderSize": 100,
-  "tickSize": 1
+  "tickSize": 1,
+  "bots": {
+    "maxBots": 10,
+    "tradingInterval": {
+      "min": 3000,
+      "max": 8000
+    },
+    "marginAboveScrap": 0.2
+  }
 }

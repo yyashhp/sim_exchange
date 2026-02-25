@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { GameConfig, GameState, PlayerState, OrderBookDepth, LeaderboardEntry, Trade, PnLBreakdown } from '../types';
+import { playTradeSound, playGameStart, playGameEnd, playCountdownTick } from '../audio/sounds';
 
 interface SocketContextType {
   socket: Socket | null;
@@ -13,11 +14,14 @@ interface SocketContextType {
   recentTrades: Trade[];
   remainingTime: number;
   finalScore: PnLBreakdown | null;
+  isSpectator: boolean;
 
   // Actions
   createGame: () => Promise<any>;
   joinGame: (name: string) => Promise<any>;
   startGame: () => Promise<any>;
+  joinAsSpectator: () => Promise<any>;
+  configureBots: (count: number) => Promise<any>;
   placeOrder: (product: string, side: 'buy' | 'sell', orderType: 'limit' | 'market', quantity: number, price?: number) => Promise<any>;
   cancelOrder: (orderId: string) => Promise<any>;
   resetGame: () => Promise<any>;
@@ -48,6 +52,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
   const [recentTrades, setRecentTrades] = useState<Trade[]>([]);
   const [remainingTime, setRemainingTime] = useState(0);
   const [finalScore, setFinalScore] = useState<PnLBreakdown | null>(null);
+  const [isSpectator, setIsSpectator] = useState(false);
 
   useEffect(() => {
     // Connect to server - use current host for LAN play
@@ -73,7 +78,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
       if (data?.remainingTime) {
         setRemainingTime(Math.round(data.remainingTime));
       }
-      // If game state is null (reset), clear player state
+      // If game state is null (reset), clear all state including spectator flag
       if (!data) {
         setPlayerState(null);
         setOrderBooks({});
@@ -81,7 +86,12 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
         setRecentTrades([]);
         setFinalScore(null);
         setRemainingTime(0);
+        setIsSpectator(false);
       }
+    });
+
+    newSocket.on('spectatorMode', (active: boolean) => {
+      setIsSpectator(active);
     });
 
     newSocket.on('playerState', (data: PlayerState) => {
@@ -97,11 +107,21 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     });
 
     newSocket.on('timer', (data: { remainingTime: number }) => {
-      setRemainingTime(Math.round(data.remainingTime));
+      const t = Math.round(data.remainingTime);
+      setRemainingTime(t);
+      // Play countdown tick for the final 10 seconds (not on 0 — that's the end buzzer)
+      if (t > 0 && t <= 10) {
+        playCountdownTick(t);
+      }
     });
 
     newSocket.on('trades', (data: Trade[]) => {
       setRecentTrades(prev => [...data, ...prev].slice(0, 50));
+      // Play a distinct sound per trade; stagger simultaneous trades by 30 ms
+      // so they don't perfectly cancel each other out.
+      data.forEach((trade, i) => {
+        playTradeSound(trade.product, i * 0.03);
+      });
     });
 
     newSocket.on('gameStarted', (data: { gameState: GameState; orderBooks: Record<string, OrderBookDepth> }) => {
@@ -109,11 +129,13 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
       setOrderBooks(data.orderBooks);
       setFinalScore(null);
       setRecentTrades([]);
+      playGameStart();
     });
 
     newSocket.on('gameEnded', (data: { leaderboard: LeaderboardEntry[]; gameState: GameState }) => {
       setGameState(data.gameState);
       setLeaderboard(data.leaderboard);
+      playGameEnd();
     });
 
     newSocket.on('finalScore', (data: PnLBreakdown) => {
@@ -142,6 +164,18 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
   const startGame = useCallback(() => {
     return new Promise((resolve) => {
       socket?.emit('startGame', resolve);
+    });
+  }, [socket]);
+
+  const joinAsSpectator = useCallback(() => {
+    return new Promise((resolve) => {
+      socket?.emit('joinAsSpectator', resolve);
+    });
+  }, [socket]);
+
+  const configureBots = useCallback((count: number) => {
+    return new Promise((resolve) => {
+      socket?.emit('configureBots', { botCount: count }, resolve);
     });
   }, [socket]);
 
@@ -180,9 +214,12 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     recentTrades,
     remainingTime,
     finalScore,
+    isSpectator,
     createGame,
     joinGame,
     startGame,
+    joinAsSpectator,
+    configureBots,
     placeOrder,
     cancelOrder,
     resetGame,

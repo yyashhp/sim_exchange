@@ -3,10 +3,11 @@ import { SocketProvider, useSocket } from './context/SocketContext';
 import Lobby from './components/Lobby';
 import TradingGame from './components/TradingGame';
 import GameEnd from './components/GameEnd';
+import SpectatorView from './components/SpectatorView';
 import './App.css';
 
 const AppContent: React.FC = () => {
-  const { connected, gameState, playerState } = useSocket();
+  const { connected, gameState, playerState, isSpectator } = useSocket();
 
   // Not connected
   if (!connected) {
@@ -21,17 +22,22 @@ const AppContent: React.FC = () => {
     );
   }
 
-  // Game ended
+  // Spectator watching a live or finished game
+  if (isSpectator && (gameState?.status === 'running' || gameState?.status === 'ended')) {
+    return <SpectatorView />;
+  }
+
+  // Game ended (as a player)
   if (gameState?.status === 'ended' && playerState) {
     return <GameEnd />;
   }
 
-  // Game running
+  // Game running (as a player)
   if (gameState?.status === 'running' && playerState) {
     return <TradingGame />;
   }
 
-  // Lobby (no game, waiting to join, or waiting to start)
+  // Lobby: no game, pre-game waiting, or spectator in lobby
   return <Lobby />;
 };
 

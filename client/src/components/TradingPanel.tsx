@@ -172,8 +172,8 @@ const TradingPanel: React.FC<TradingPanelProps> = ({
               type="number"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
-              min="1"
-              step="1"
+              min="0.01"
+              step="0.01"
               placeholder="Enter price"
             />
           </div>
