@@ -16,7 +16,7 @@ const os = require('os');
 const config = require('./config.json');
 
 // Import modules
-const { DataStore } = require('./models');
+const { DataStore, SQLiteAdapter } = require('./models');
 const GameManager = require('./engine/gameManager');
 const MatchingEngine = require('./engine/matchingEngine');
 const BotManager = require('./bots/botManager');
@@ -40,7 +40,18 @@ const clientBuildPath = path.join(__dirname, '../client/build');
 app.use(express.static(clientBuildPath));
 
 // Initialize data store and engines
-const dataStore = new DataStore();
+// Use SQLite for persistent storage (set USE_MEMORY_DB=true to use in-memory storage for testing)
+const useMemoryDb = process.env.USE_MEMORY_DB === 'true';
+const dbAdapter = useMemoryDb ? null : new SQLiteAdapter();
+const dataStore = new DataStore(dbAdapter);
+
+if (!useMemoryDb) {
+  console.log('[SERVER] Using SQLite database for persistent storage');
+  console.log('[SERVER] Database stats:', dbAdapter.getStats());
+} else {
+  console.log('[SERVER] Using in-memory storage (data will not persist)');
+}
+
 const gameManager = new GameManager(dataStore, config);
 const matchingEngine = new MatchingEngine(dataStore, config);
 const botManager = new BotManager(dataStore, gameManager, matchingEngine, config);
@@ -93,6 +104,20 @@ app.get('/api/game/:gameId/export', (req, res) => {
     return res.status(404).json({ error: 'Game not found' });
   }
   res.json(data);
+});
+
+// Get database statistics
+app.get('/api/database/stats', (req, res) => {
+  if (useMemoryDb) {
+    return res.json({
+      mode: 'in-memory',
+      message: 'Using in-memory storage - no persistent database'
+    });
+  }
+  res.json({
+    mode: 'sqlite',
+    ...dbAdapter.getStats()
+  });
 });
 
 // Catch-all: serve React app for any non-API routes
@@ -587,4 +612,27 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log('\nIn development, React dev server runs on port 3000');
   console.log('In production, the built client is served from port ' + PORT);
   console.log('\n========================================\n');
+});
+
+// Graceful shutdown
+process.on('SIGINT', () => {
+  console.log('\n[SERVER] Shutting down gracefully...');
+  if (dbAdapter && !useMemoryDb) {
+    dbAdapter.close();
+  }
+  server.close(() => {
+    console.log('[SERVER] Server closed');
+    process.exit(0);
+  });
+});
+
+process.on('SIGTERM', () => {
+  console.log('\n[SERVER] Shutting down gracefully...');
+  if (dbAdapter && !useMemoryDb) {
+    dbAdapter.close();
+  }
+  server.close(() => {
+    console.log('[SERVER] Server closed');
+    process.exit(0);
+  });
 });

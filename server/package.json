@@ -8,11 +8,17 @@
     "dev": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["trading", "game", "socket.io", "real-time"],
+  "keywords": [
+    "trading",
+    "game",
+    "socket.io",
+    "real-time"
+  ],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "better-sqlite3": "^12.6.2",
     "cors": "^2.8.5",
     "express": "^4.21.2",
     "socket.io": "^4.8.3",

@@ -98,6 +98,8 @@ class DataStore {
   // ---- Game operations ----
   saveGame(game) {
     this._games.set(game.gameId, game);
+    // Persist to database
+    this.adapter.saveGame(game.toJSON());
     return game;
   }
 
@@ -108,6 +110,8 @@ class DataStore {
   // ---- Player operations ----
   savePlayer(player) {
     this._players.set(player.playerId, player);
+    // Persist to database
+    this.adapter.savePlayer(player.toJSON());
     return player;
   }
 
@@ -122,6 +126,8 @@ class DataStore {
   // ---- Order operations ----
   saveOrder(order) {
     this._orders.set(order.orderId, order);
+    // Persist to database
+    this.adapter.saveOrder(order.toJSON());
     return order;
   }
 
@@ -143,6 +149,8 @@ class DataStore {
   saveTrade(trade) {
     this._trades.set(trade.tradeId, trade);
     console.log(`[TRADE] ${trade.quantity} ${trade.product} @ $${trade.price} | buyer=${trade.buyerId.slice(0,8)} seller=${trade.sellerId.slice(0,8)}`);
+    // Persist to database
+    this.adapter.saveTrade(trade.toJSON());
     return trade;
   }
 
@@ -154,6 +162,8 @@ class DataStore {
   logEvent(event) {
     this._events.push(event);
     console.log(`[EVENT] ${event.type}${event.playerName ? ' | ' + event.playerName : ''}${event.gameId ? ' | game=' + event.gameId.slice(0,8) : ''}`);
+    // Persist to database
+    this.adapter.saveEvent(event);
   }
 
   // ---- Export operations ----
@@ -606,8 +616,12 @@ class OrderBook {
   }
 }
 
+// Import SQLiteAdapter
+const SQLiteAdapter = require('../database/SQLiteAdapter');
+
 module.exports = {
   InMemoryAdapter,
+  SQLiteAdapter,
   DataStore,
   Game,
   Player,
