@@ -5,3 +5,8 @@ client/build/
 *.log
 server/package-lock.json
 client/package-lock.json
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
