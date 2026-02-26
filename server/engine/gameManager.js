@@ -308,6 +308,11 @@ class GameManager {
     // Export game data
     this.dataStore.exportGameData(this.currentGame.gameId);
 
+    // Flush all game data to database (deferred write mode)
+    this.dataStore.flushGameData(this.currentGame.gameId).catch(err => {
+      console.error('[GAME] Failed to flush game data to database:', err);
+    });
+
     if (this.onGameEnd) {
       this.onGameEnd(leaderboard);
     }

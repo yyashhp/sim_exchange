@@ -83,10 +83,14 @@ class InMemoryAdapter {
  * DataStore - Data access layer
  * Wraps the database adapter and manages model instances
  * Logs structured data to console for debugging
+ *
+ * Performance optimization: Set deferWrites=true to batch all database
+ * writes until game end, then call flushGameData(gameId) to persist.
  */
 class DataStore {
-  constructor(adapter = null) {
+  constructor(adapter = null, deferWrites = true) {
     this.adapter = adapter || new InMemoryAdapter();
+    this.deferWrites = deferWrites; // If true, skip DB writes during gameplay
     // In-memory model instances (live objects, not just data)
     this._games = new Map();
     this._players = new Map();
@@ -98,8 +102,10 @@ class DataStore {
   // ---- Game operations ----
   saveGame(game) {
     this._games.set(game.gameId, game);
-    // Persist to database
-    this.adapter.saveGame(game.toJSON());
+    // Persist to database (unless deferred)
+    if (!this.deferWrites) {
+      this.adapter.saveGame(game.toJSON());
+    }
     return game;
   }
 
@@ -110,8 +116,10 @@ class DataStore {
   // ---- Player operations ----
   savePlayer(player) {
     this._players.set(player.playerId, player);
-    // Persist to database
-    this.adapter.savePlayer(player.toJSON());
+    // Persist to database (unless deferred)
+    if (!this.deferWrites) {
+      this.adapter.savePlayer(player.toJSON());
+    }
     return player;
   }
 
@@ -126,8 +134,10 @@ class DataStore {
   // ---- Order operations ----
   saveOrder(order) {
     this._orders.set(order.orderId, order);
-    // Persist to database
-    this.adapter.saveOrder(order.toJSON());
+    // Persist to database (unless deferred)
+    if (!this.deferWrites) {
+      this.adapter.saveOrder(order.toJSON());
+    }
     return order;
   }
 
@@ -149,8 +159,10 @@ class DataStore {
   saveTrade(trade) {
     this._trades.set(trade.tradeId, trade);
     console.log(`[TRADE] ${trade.quantity} ${trade.product} @ $${trade.price} | buyer=${trade.buyerId.slice(0,8)} seller=${trade.sellerId.slice(0,8)}`);
-    // Persist to database
-    this.adapter.saveTrade(trade.toJSON());
+    // Persist to database (unless deferred)
+    if (!this.deferWrites) {
+      this.adapter.saveTrade(trade.toJSON());
+    }
     return trade;
   }
 
@@ -162,8 +174,68 @@ class DataStore {
   logEvent(event) {
     this._events.push(event);
     console.log(`[EVENT] ${event.type}${event.playerName ? ' | ' + event.playerName : ''}${event.gameId ? ' | game=' + event.gameId.slice(0,8) : ''}`);
-    // Persist to database
-    this.adapter.saveEvent(event);
+    // Persist to database (unless deferred)
+    if (!this.deferWrites) {
+      this.adapter.saveEvent(event);
+    }
+  }
+
+  /**
+   * Flush all game data to database (for deferred write mode)
+   * Writes data in correct order to respect foreign key constraints:
+   * 1. Game
+   * 2. Players (reference game)
+   * 3. Orders (reference game and players)
+   * 4. Trades (reference orders and players)
+   * 5. Events (reference game)
+   */
+  async flushGameData(gameId) {
+    if (!this.deferWrites) {
+      console.log('[DATASTORE] Flush skipped - not in deferred write mode');
+      return;
+    }
+
+    console.log(`[DATASTORE] 💾 Flushing game ${gameId.slice(0, 8)} to database...`);
+    const startTime = Date.now();
+
+    try {
+      // 1. Save game
+      const game = this.getGame(gameId);
+      if (game) {
+        await this.adapter.saveGame(game.toJSON());
+      }
+
+      // 2. Save players
+      const players = this.getPlayersByGame(gameId);
+      for (const player of players) {
+        await this.adapter.savePlayer(player.toJSON());
+      }
+
+      // 3. Save orders
+      const orders = Array.from(this._orders.values()).filter(o => o.gameId === gameId);
+      for (const order of orders) {
+        await this.adapter.saveOrder(order.toJSON());
+      }
+
+      // 4. Save trades (must be after orders due to foreign keys)
+      const trades = this.getTradesByGame(gameId);
+      for (const trade of trades) {
+        await this.adapter.saveTrade(trade.toJSON());
+      }
+
+      // 5. Save events
+      const events = this._events.filter(e => e.gameId === gameId);
+      for (const event of events) {
+        await this.adapter.saveEvent(event);
+      }
+
+      const duration = Date.now() - startTime;
+      console.log(`[DATASTORE] ✅ Database flush complete in ${duration}ms`);
+      console.log(`[DATASTORE] Saved: ${players.length} players, ${orders.length} orders, ${trades.length} trades, ${events.length} events`);
+    } catch (error) {
+      console.error('[DATASTORE] ❌ Database flush failed:', error.message);
+      throw error;
+    }
   }
 
   // ---- Export operations ----
