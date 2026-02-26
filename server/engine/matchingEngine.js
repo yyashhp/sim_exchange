@@ -247,12 +247,12 @@ class MatchingEngine {
       seller.removeOrder(sellOrder.orderId);
     }
 
-    // Save to datastore
-    this.dataStore.saveTrade(trade);
+    // Save to datastore (orders must be saved before trade due to foreign key constraints)
     this.dataStore.savePlayer(buyer);
     this.dataStore.savePlayer(seller);
     this.dataStore.saveOrder(buyOrder);
     this.dataStore.saveOrder(sellOrder);
+    this.dataStore.saveTrade(trade);
 
     console.log(`[ENGINE] Trade executed: ${quantity} ${incomingOrder.product} @ ${price} (${buyerId} <- ${sellerId})`);
 
