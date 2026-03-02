@@ -34,9 +34,9 @@ const RecentTrades: React.FC = () => {
             <div className="trade-details">
               <span className="trade-qty">{trade.quantity}</span>
               <span className="trade-at">@</span>
-              <span className="trade-price">${trade.price}</span>
+              <span className="trade-price">${trade.price.toFixed(2)}</span>
             </div>
-            <div className="trade-value">${trade.value}</div>
+            <div className="trade-value">${trade.value.toFixed(2)}</div>
           </div>
         ))}
 

@@ -15,6 +15,16 @@
 
 const { v4: uuidv4 } = require('uuid');
 
+// ==================== UTILITY FUNCTIONS ====================
+
+/**
+ * Round to 2 decimal places to avoid floating point precision errors
+ * Example: 161.1000000000002 -> 161.10
+ */
+function round2(value) {
+  return Math.round(value * 100) / 100;
+}
+
 // ==================== DATABASE ADAPTER INTERFACE ====================
 
 /**
@@ -403,18 +413,18 @@ class Player {
       scrapValue += quantity * (scrapValues[product] || 0);
     }
 
-    const setsValue = completeSets * setValue;
-    const totalScore = this.cash + setsValue + scrapValue;
+    const setsValue = round2(completeSets * setValue);
+    const totalScore = round2(this.cash + setsValue + scrapValue);
 
     this.setsFormed = completeSets;
     this.finalScore = totalScore;
     this.pnlBreakdown = {
-      cash: this.cash,
+      cash: round2(this.cash),
       completeSets,
       setsValue,
-      scrapValue,
+      scrapValue: round2(scrapValue),
       totalScore,
-      pnl: totalScore - (this.initialCash + this.getInitialInventoryValue(scrapValues))
+      pnl: round2(totalScore - (this.initialCash + this.getInitialInventoryValue(scrapValues)))
     };
 
     return this.pnlBreakdown;

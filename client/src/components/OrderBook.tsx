@@ -20,7 +20,7 @@ const OrderBook: React.FC<OrderBookProps> = ({ orderBook, onSelectPrice }) => {
         <h3>{orderBook.product.toUpperCase()}</h3>
         <div className="spread">
           {orderBook.spread !== null ? (
-            <span>Spread: ${orderBook.spread}</span>
+            <span>Spread: ${orderBook.spread.toFixed(2)}</span>
           ) : (
             <span>No spread</span>
           )}
@@ -44,7 +44,7 @@ const OrderBook: React.FC<OrderBookProps> = ({ orderBook, onSelectPrice }) => {
                 className="level-bar"
                 style={{ width: `${(level.quantity / maxQuantity) * 100}%` }}
               />
-              <span className="price">${level.price}</span>
+              <span className="price">${level.price.toFixed(2)}</span>
               <span className="quantity">{level.quantity}</span>
             </div>
           ))}
@@ -56,10 +56,10 @@ const OrderBook: React.FC<OrderBookProps> = ({ orderBook, onSelectPrice }) => {
         {/* Best prices display */}
         <div className="best-prices">
           <div className="best-ask">
-            Ask: {orderBook.bestAsk !== null ? `$${orderBook.bestAsk}` : '-'}
+            Ask: {orderBook.bestAsk !== null ? `$${orderBook.bestAsk.toFixed(2)}` : '-'}
           </div>
           <div className="best-bid">
-            Bid: {orderBook.bestBid !== null ? `$${orderBook.bestBid}` : '-'}
+            Bid: {orderBook.bestBid !== null ? `$${orderBook.bestBid.toFixed(2)}` : '-'}
           </div>
         </div>
 
@@ -75,7 +75,7 @@ const OrderBook: React.FC<OrderBookProps> = ({ orderBook, onSelectPrice }) => {
                 className="level-bar"
                 style={{ width: `${(level.quantity / maxQuantity) * 100}%` }}
               />
-              <span className="price">${level.price}</span>
+              <span className="price">${level.price.toFixed(2)}</span>
               <span className="quantity">{level.quantity}</span>
             </div>
           ))}
