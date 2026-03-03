@@ -65,7 +65,7 @@ const PlayerStatus: React.FC = () => {
                   <span className="order-side">{order.side.toUpperCase()}</span>
                   <span className="order-qty">{order.remainingQuantity}</span>
                   <span className="order-product">{order.product}</span>
-                  <span className="order-price">@ ${order.price.toFixed(2)}</span>
+                  <span className="order-price">@ ${order.price?.toFixed(2) ?? 'MKT'}</span>
                 </div>
                 <button
                   className="cancel-btn"

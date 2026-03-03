@@ -1,7 +1,7 @@
 {
   "gameDuration": 180,
   "startingCash": 100,
-  "maxPlayers": 50,
+  "maxPlayers": 250,
   "products": ["bread", "veggies", "cheese", "meat"],
   "scrapValues": {
     "bread": 2,

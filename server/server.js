@@ -13,7 +13,7 @@ const path = require('path');
 const os = require('os');
 
 // Load environment variables from .env
-require('dotenv').config();
+//require('dotenv').config();
 
 // Load configuration
 const config = require('./config.json');
