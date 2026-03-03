@@ -23,7 +23,7 @@
   "maxOrderSize": 100,
   "tickSize": 1,
   "bots": {
-    "maxBots": 10,
+    "maxBots": 200,
     "tradingInterval": {
       "min": 3000,
       "max": 8000

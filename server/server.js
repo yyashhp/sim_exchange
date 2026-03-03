@@ -12,6 +12,9 @@ const cors = require('cors');
 const path = require('path');
 const os = require('os');
 
+// Load environment variables from .env
+require('dotenv').config();
+
 // Load configuration
 const config = require('./config.json');
 
