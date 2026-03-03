@@ -18,7 +18,7 @@ const PlayerStatus: React.FC = () => {
     <div className="player-status">
       <div className="status-section">
         <h3>💰 Cash</h3>
-        <div className="cash-display">${playerState.cash}</div>
+        <div className="cash-display">${playerState.cash.toFixed(2)}</div>
       </div>
 
       <div className="status-section">
@@ -34,13 +34,13 @@ const PlayerStatus: React.FC = () => {
               </span>
               <span className="item-name">{product}</span>
               <span className="item-count">{playerState.inventory[product] || 0}</span>
-              <span className="item-value">${(playerState.inventory[product] || 0) * config.scrapValues[product]}</span>
+              <span className="item-value">${((playerState.inventory[product] || 0) * config.scrapValues[product]).toFixed(2)}</span>
             </div>
           ))}
         </div>
         <div className="inventory-total">
           <span>Total Value:</span>
-          <span>${playerState.inventoryValue}</span>
+          <span>${playerState.inventoryValue.toFixed(2)}</span>
         </div>
       </div>
 
@@ -65,7 +65,7 @@ const PlayerStatus: React.FC = () => {
                   <span className="order-side">{order.side.toUpperCase()}</span>
                   <span className="order-qty">{order.remainingQuantity}</span>
                   <span className="order-product">{order.product}</span>
-                  <span className="order-price">@ ${order.price}</span>
+                  <span className="order-price">@ ${order.price.toFixed(2)}</span>
                 </div>
                 <button
                   className="cancel-btn"
@@ -83,19 +83,19 @@ const PlayerStatus: React.FC = () => {
         <h3>📊 Summary</h3>
         <div className="summary-row">
           <span>Cash:</span>
-          <span>${playerState.cash}</span>
+          <span>${playerState.cash.toFixed(2)}</span>
         </div>
         <div className="summary-row">
           <span>Inventory (scrap):</span>
-          <span>${playerState.inventoryValue}</span>
+          <span>${playerState.inventoryValue.toFixed(2)}</span>
         </div>
         <div className="summary-row">
           <span>Sets ({playerState.completeSets} × ${config.setValue}):</span>
-          <span>${playerState.completeSets * config.setValue}</span>
+          <span>${(playerState.completeSets * config.setValue).toFixed(2)}</span>
         </div>
         <div className="summary-row total">
           <span>Est. Total:</span>
-          <span>${playerState.cash + playerState.inventoryValue}</span>
+          <span>${(playerState.cash + playerState.inventoryValue).toFixed(2)}</span>
         </div>
       </div>
     </div>

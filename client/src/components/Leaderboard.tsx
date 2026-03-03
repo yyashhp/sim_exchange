@@ -29,12 +29,12 @@ const Leaderboard: React.FC = () => {
                 <>
                   <div className="stat">
                     <span className="stat-label">Score</span>
-                    <span className="stat-value">${entry.totalScore}</span>
+                    <span className="stat-value">${(entry.totalScore || 0).toFixed(2)}</span>
                   </div>
                   <div className="stat">
                     <span className="stat-label">PnL</span>
                     <span className={`stat-value ${(entry.pnl || 0) >= 0 ? 'positive' : 'negative'}`}>
-                      {(entry.pnl || 0) >= 0 ? '+' : ''}${entry.pnl}
+                      {(entry.pnl || 0) >= 0 ? '+' : ''}${(entry.pnl || 0).toFixed(2)}
                     </span>
                   </div>
                   <div className="stat">
@@ -46,7 +46,7 @@ const Leaderboard: React.FC = () => {
                 <>
                   <div className="stat">
                     <span className="stat-label">Est. Value</span>
-                    <span className="stat-value">${entry.estimatedValue}</span>
+                    <span className="stat-value">${(entry.estimatedValue || 0).toFixed(2)}</span>
                   </div>
                   <div className="stat">
                     <span className="stat-label">Sets</span>

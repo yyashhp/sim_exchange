@@ -30,28 +30,28 @@ const GameEnd: React.FC = () => {
             <div className="breakdown-card">
               <div className="breakdown-row">
                 <span className="label">Cash</span>
-                <span className="value">${finalScore.cash}</span>
+                <span className="value">${finalScore.cash.toFixed(2)}</span>
               </div>
 
               <div className="breakdown-row highlight">
                 <span className="label">Complete Sandwiches ({finalScore.completeSets} x ${config?.setValue})</span>
-                <span className="value positive">${finalScore.setsValue}</span>
+                <span className="value positive">${finalScore.setsValue.toFixed(2)}</span>
               </div>
 
               <div className="breakdown-row">
                 <span className="label">Leftover Ingredients (scrap)</span>
-                <span className="value">${finalScore.scrapValue}</span>
+                <span className="value">${finalScore.scrapValue.toFixed(2)}</span>
               </div>
 
               <div className="breakdown-row total">
                 <span className="label">Total Score</span>
-                <span className="value">${finalScore.totalScore}</span>
+                <span className="value">${finalScore.totalScore.toFixed(2)}</span>
               </div>
 
               <div className="pnl-display">
                 <span className="pnl-label">Profit/Loss</span>
                 <span className={`pnl-value ${finalScore.pnl >= 0 ? 'positive' : 'negative'}`}>
-                  {finalScore.pnl >= 0 ? '+' : ''}${finalScore.pnl}
+                  {finalScore.pnl >= 0 ? '+' : ''}${finalScore.pnl.toFixed(2)}
                 </span>
               </div>
             </div>

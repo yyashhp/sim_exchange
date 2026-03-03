@@ -10,6 +10,13 @@
 
 const { Order, Trade, OrderBook } = require('../models');
 
+/**
+ * Round to 2 decimal places to avoid floating point precision errors
+ */
+function round2(value) {
+  return Math.round(value * 100) / 100;
+}
+
 class MatchingEngine {
   constructor(dataStore, config) {
     this.dataStore = dataStore;
@@ -212,11 +219,11 @@ class MatchingEngine {
 
     // Execute the trade
     // Update buyer
-    buyer.cash -= tradeValue;
+    buyer.cash = round2(buyer.cash - tradeValue);
     buyer.inventory[incomingOrder.product] = (buyer.inventory[incomingOrder.product] || 0) + quantity;
 
     // Update seller
-    seller.cash += tradeValue;
+    seller.cash = round2(seller.cash + tradeValue);
     seller.inventory[incomingOrder.product] = (seller.inventory[incomingOrder.product] || 0) - quantity;
 
     // Create trade record
