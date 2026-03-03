@@ -233,7 +233,7 @@ class GameManager {
   startTimer() {
     let remainingTime = this.config.gameDuration;
 
-    this.gameTimer = setInterval(() => {
+    this.gameTimer = setInterval(async () => {
       remainingTime--;
 
       if (this.onTimerTick) {
@@ -241,7 +241,7 @@ class GameManager {
       }
 
       if (remainingTime <= 0) {
-        this.endGame();
+        await this.endGame();
       }
     }, 1000);
   }
@@ -249,7 +249,7 @@ class GameManager {
   /**
    * End the game
    */
-  endGame() {
+  async endGame() {
     if (!this.currentGame || this.currentGame.status === 'ended') {
       return { success: false, error: 'No active game to end' };
     }
@@ -309,9 +309,12 @@ class GameManager {
     this.dataStore.exportGameData(this.currentGame.gameId);
 
     // Flush all game data to database (deferred write mode)
-    this.dataStore.flushGameData(this.currentGame.gameId).catch(err => {
-      console.error('[GAME] Failed to flush game data to database:', err);
-    });
+    try {
+      await this.dataStore.flushGameData(this.currentGame.gameId);
+    } catch (err) {
+      console.error('[GAME] ❌ Failed to flush game data to database:', err.message);
+      console.error('[GAME] Full error:', err);
+    }
 
     if (this.onGameEnd) {
       this.onGameEnd(leaderboard);

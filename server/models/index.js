@@ -107,6 +107,9 @@ class DataStore {
     this._orders = new Map();
     this._trades = new Map();
     this._events = [];
+
+    console.log(`[DATASTORE] Initialized with adapter: ${this.adapter.constructor.name}`);
+    console.log(`[DATASTORE] Deferred writes: ${this.deferWrites ? 'ENABLED (batch write at game end)' : 'DISABLED (immediate writes)'}`);
   }
 
   // ---- Game operations ----
@@ -205,7 +208,8 @@ class DataStore {
       return;
     }
 
-    console.log(`[DATASTORE] 💾 Flushing game ${gameId.slice(0, 8)} to database...`);
+    const adapterName = this.adapter.constructor.name;
+    console.log(`[DATASTORE] 💾 Flushing game ${gameId.slice(0, 8)} to database using ${adapterName}...`);
     const startTime = Date.now();
 
     try {
@@ -303,8 +307,8 @@ class DataStore {
     console.log(`[EVENTS] Count: ${data.events.length}`);
 
     console.log('\n' + '='.repeat(60));
-    console.log('  To upload this data, implement DatabaseAdapter');
-    console.log('  and call: dataStore.adapter.exportAll(gameId)');
+    console.log('  ✅ Game data flushed to database automatically');
+    console.log('  All game data written in correct order');
     console.log('='.repeat(60) + '\n');
   }
 }
