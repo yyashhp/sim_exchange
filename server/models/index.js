@@ -320,11 +320,65 @@ class Game {
     this.gameId = uuidv4();
     this.hostPlayerId = hostPlayerId;
     this.status = 'lobby'; // 'lobby' | 'running' | 'ended'
-    this.config = config;
+    this.config = this._randomizeEconomics(config);
     this.playerIds = [];
     this.startTime = null;
     this.endTime = null;
     this.createdAt = new Date().toISOString();
+  }
+
+  /**
+   * Randomize game economics for variety
+   * - Scrap values: 1-10 for each product
+   * - Recipe: 0-3 of each ingredient
+   * - Sandwich value: sum of ingredient values + random premium (0.50 to 25% of base)
+   */
+  _randomizeEconomics(baseConfig) {
+    const config = JSON.parse(JSON.stringify(baseConfig)); // Deep clone
+
+    // Randomize scrap values (1-10)
+    config.scrapValues = {};
+    for (const product of config.products) {
+      config.scrapValues[product] = Math.floor(Math.random() * 10) + 1;
+    }
+
+    // Randomize sandwich recipe (0-3 of each ingredient)
+    config.setRecipe = {};
+    let totalIngredients = 0;
+    for (const product of config.products) {
+      const amount = Math.floor(Math.random() * 4); // 0-3
+      config.setRecipe[product] = amount;
+      totalIngredients += amount;
+    }
+
+    // Ensure at least one ingredient is required
+    if (totalIngredients === 0) {
+      const randomProduct = config.products[Math.floor(Math.random() * config.products.length)];
+      config.setRecipe[randomProduct] = 1;
+      totalIngredients = 1;
+    }
+
+    // Calculate sandwich base value (sum of ingredient scrap values)
+    let baseValue = 0;
+    for (const product of config.products) {
+      baseValue += config.setRecipe[product] * config.scrapValues[product];
+    }
+
+    // Add random premium: 0.50 to 25% of base value
+    const minPremium = 0.50;
+    const maxPremium = baseValue * 0.25;
+    const premium = minPremium + Math.random() * (maxPremium - minPremium);
+
+    config.setValue = round2(baseValue + premium);
+
+    // Log the randomized economics
+    console.log('\n[GAME] 🎲 Randomized Economics:');
+    console.log('[GAME] Scrap Values:', config.scrapValues);
+    console.log('[GAME] Recipe:', config.setRecipe);
+    console.log('[GAME] Sandwich Value: $' + config.setValue + ` (base: $${baseValue}, premium: $${round2(premium)})`);
+    console.log('');
+
+    return config;
   }
 
   addPlayer(playerId) {
