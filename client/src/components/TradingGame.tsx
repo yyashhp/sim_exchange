@@ -39,6 +39,23 @@ const TradingGame: React.FC = () => {
     return '#ff6b6b';
   };
 
+  // Format recipe for display
+  const formatRecipe = () => {
+    if (!config?.setRecipe) return '';
+    const productIcons: { [key: string]: string } = {
+      bread: '🍞',
+      veggies: '🥬',
+      cheese: '🧀',
+      meat: '🥩'
+    };
+
+    const parts = Object.entries(config.setRecipe)
+      .filter(([_, amount]) => amount > 0)
+      .map(([product, amount]) => `${amount}x${productIcons[product]}`);
+
+    return parts.join(' + ');
+  };
+
   return (
     <div className="trading-game">
       {/* Header */}
