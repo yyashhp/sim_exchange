@@ -190,3 +190,103 @@
   color: #666;
   font-size: 0.9rem;
 }
+
+.info-banner {
+  display: inline-block;
+  padding: 10px 25px;
+  background: rgba(76, 175, 80, 0.2);
+  color: #4CAF50;
+  font-size: 1.2rem;
+  border-radius: 10px;
+  border: 1px solid rgba(76, 175, 80, 0.4);
+}
+
+.question-display-large {
+  background: rgba(76, 175, 80, 0.1);
+  border-left: 4px solid #4CAF50;
+  border-radius: 10px;
+  padding: 20px 25px;
+  margin-bottom: 30px;
+  color: #ccc;
+  font-size: 1.1rem;
+}
+
+.question-display-large strong {
+  color: #4CAF50;
+  display: block;
+  margin-bottom: 10px;
+  font-size: 1.2rem;
+}
+
+.correct-value-form {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 15px;
+  padding: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.correct-value-form h2 {
+  color: #fff;
+  margin-bottom: 10px;
+}
+
+.form-description {
+  color: #888;
+  margin-bottom: 25px;
+  font-size: 0.95rem;
+}
+
+.correct-value-form input {
+  width: 100%;
+  padding: 15px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 1.2rem;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.correct-value-form input:focus {
+  outline: none;
+  border-color: #4CAF50;
+}
+
+.correct-value-form .btn {
+  width: 100%;
+}
+
+.correct-value-form .error {
+  color: #ff6b6b;
+  margin-top: 15px;
+  text-align: center;
+}
+
+.waiting-for-host {
+  text-align: center;
+  padding: 40px;
+}
+
+.waiting-for-host p {
+  color: #888;
+  font-size: 1.2rem;
+  margin-bottom: 30px;
+}
+
+.spinner {
+  border: 4px solid rgba(255, 255, 255, 0.1);
+  border-top: 4px solid #4CAF50;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

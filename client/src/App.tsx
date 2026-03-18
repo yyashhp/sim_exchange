@@ -23,12 +23,17 @@ const AppContent: React.FC = () => {
   }
 
   // Spectator watching a live or finished game
-  if (isSpectator && (gameState?.status === 'running' || gameState?.status === 'ended')) {
+  if (isSpectator && (gameState?.status === 'running' || gameState?.status === 'ended' || gameState?.status === 'awaiting_value')) {
     return <SpectatorView />;
   }
 
   // Game ended (as a player)
   if (gameState?.status === 'ended' && playerState) {
+    return <GameEnd />;
+  }
+
+  // Game awaiting correct value (Random Product mode)
+  if (gameState?.status === 'awaiting_value' && playerState) {
     return <GameEnd />;
   }
 

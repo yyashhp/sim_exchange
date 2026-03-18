@@ -316,11 +316,23 @@ class DataStore {
 // ==================== GAME MODEL ====================
 
 class Game {
-  constructor(hostPlayerId, config) {
+  constructor(hostPlayerId, config, gameMode = 'sandwich', question = null) {
     this.gameId = uuidv4();
     this.hostPlayerId = hostPlayerId;
-    this.status = 'lobby'; // 'lobby' | 'running' | 'ended'
-    this.config = this._randomizeEconomics(config);
+    this.status = 'lobby'; // 'lobby' | 'running' | 'ended' | 'awaiting_value'
+    this.gameMode = gameMode; // 'sandwich' | 'randomProduct'
+    this.question = question; // For Random Product mode
+    this.correctValue = null; // For Random Product mode - set at end of game
+
+    // Apply game mode-specific configuration
+    if (gameMode === 'sandwich') {
+      this.config = this._randomizeEconomics(config);
+    } else if (gameMode === 'randomProduct') {
+      this.config = this._setupRandomProduct(config);
+    } else {
+      this.config = JSON.parse(JSON.stringify(config));
+    }
+
     this.playerIds = [];
     this.startTime = null;
     this.endTime = null;
@@ -328,7 +340,33 @@ class Game {
   }
 
   /**
-   * Randomize game economics for variety
+   * Setup Random Product mode configuration
+   * - Single product
+   * - No scrap values or recipes needed
+   * - Players have infinite cash (managed in player logic)
+   */
+  _setupRandomProduct(baseConfig) {
+    const config = JSON.parse(JSON.stringify(baseConfig)); // Deep clone
+
+    // Use a single generic product for Random Product mode
+    config.products = ['product'];
+    config.gameMode = 'randomProduct';
+
+    // These aren't used in Random Product mode but keep them for compatibility
+    config.scrapValues = { product: 0 };
+    config.setValue = 0;
+    config.setRecipe = { product: 0 };
+
+    console.log('\n[GAME] 🎯 Random Product Mode');
+    console.log('[GAME] Question:', this.question);
+    console.log('[GAME] Trading single product with infinite cash');
+    console.log('');
+
+    return config;
+  }
+
+  /**
+   * Randomize game economics for variety (Sandwich Exchange mode only)
    * - Scrap values: 1-10 for each product
    * - Recipe: 0-3 of each ingredient
    * - Sandwich value: sum of ingredient values + random premium (0.50 to 25% of base)
@@ -381,6 +419,18 @@ class Game {
     return config;
   }
 
+  /**
+   * Set the correct value for Random Product mode (called by host at end of game)
+   */
+  setCorrectValue(value) {
+    if (this.gameMode !== 'randomProduct') {
+      throw new Error('Can only set correct value in Random Product mode');
+    }
+    this.correctValue = value;
+    this.correctValue = value;
+    console.log(`[GAME] Correct value set to: ${value}`);
+  }
+
   addPlayer(playerId) {
     if (!this.playerIds.includes(playerId)) {
       this.playerIds.push(playerId);
@@ -412,6 +462,9 @@ class Game {
       gameId: this.gameId,
       hostPlayerId: this.hostPlayerId,
       status: this.status,
+      gameMode: this.gameMode,
+      question: this.question,
+      correctValue: this.correctValue,
       config: this.config,
       playerIds: this.playerIds,
       startTime: this.startTime,
@@ -424,7 +477,7 @@ class Game {
 // ==================== PLAYER MODEL ====================
 
 class Player {
-  constructor(gameId, name, startingCash, startingInventory, isBot = false) {
+  constructor(gameId, name, startingCash, startingInventory, isBot = false, gameMode = 'sandwich') {
     this.playerId = uuidv4();
     this.gameId = gameId;
     this.name = name;
@@ -439,6 +492,8 @@ class Player {
     this.pnlBreakdown = null;
     this.joinedAt = new Date().toISOString();
     this.isBot = isBot;
+    this.gameMode = gameMode;
+    this.position = 0; // For Random Product mode: net position (positive = long, negative = short)
   }
 
   getInventoryScrapValue(scrapValues) {
@@ -458,34 +513,65 @@ class Player {
     return minSets === Infinity ? 0 : minSets;
   }
 
-  calculateFinalScore(scrapValues, setValue, setRecipe) {
-    const completeSets = this.getCompleteSets(setRecipe);
+  /**
+   * Get current position for Random Product mode
+   * Position = inventory['product'] (net long/short)
+   */
+  getPosition() {
+    if (this.gameMode !== 'randomProduct') return 0;
+    return this.inventory['product'] || 0;
+  }
 
-    const remainingInventory = { ...this.inventory };
-    for (const [product, required] of Object.entries(setRecipe)) {
-      remainingInventory[product] -= completeSets * required;
+  calculateFinalScore(scrapValues, setValue, setRecipe, gameMode = 'sandwich', correctValue = null) {
+    if (gameMode === 'randomProduct') {
+      // Random Product mode: PnL is based on position * (correct value - average entry price)
+      // Since we don't track average entry, we'll use position * correct value as the simplified PnL
+      const position = this.getPosition();
+      const positionValue = round2(position * (correctValue || 0));
+      const totalScore = round2(this.cash + positionValue);
+      const pnl = round2(totalScore - this.initialCash);
+
+      this.finalScore = totalScore;
+      this.pnlBreakdown = {
+        cash: round2(this.cash),
+        position,
+        positionValue,
+        correctValue,
+        totalScore,
+        pnl
+      };
+
+      return this.pnlBreakdown;
+    } else {
+      // Sandwich Exchange mode
+      const completeSets = this.getCompleteSets(setRecipe);
+
+      const remainingInventory = { ...this.inventory };
+      for (const [product, required] of Object.entries(setRecipe)) {
+        remainingInventory[product] -= completeSets * required;
+      }
+
+      let scrapValue = 0;
+      for (const [product, quantity] of Object.entries(remainingInventory)) {
+        scrapValue += quantity * (scrapValues[product] || 0);
+      }
+
+      const setsValue = round2(completeSets * setValue);
+      const totalScore = round2(this.cash + setsValue + scrapValue);
+
+      this.setsFormed = completeSets;
+      this.finalScore = totalScore;
+      this.pnlBreakdown = {
+        cash: round2(this.cash),
+        completeSets,
+        setsValue,
+        scrapValue: round2(scrapValue),
+        totalScore,
+        pnl: round2(totalScore - (this.initialCash + this.getInitialInventoryValue(scrapValues)))
+      };
+
+      return this.pnlBreakdown;
     }
-
-    let scrapValue = 0;
-    for (const [product, quantity] of Object.entries(remainingInventory)) {
-      scrapValue += quantity * (scrapValues[product] || 0);
-    }
-
-    const setsValue = round2(completeSets * setValue);
-    const totalScore = round2(this.cash + setsValue + scrapValue);
-
-    this.setsFormed = completeSets;
-    this.finalScore = totalScore;
-    this.pnlBreakdown = {
-      cash: round2(this.cash),
-      completeSets,
-      setsValue,
-      scrapValue: round2(scrapValue),
-      totalScore,
-      pnl: round2(totalScore - (this.initialCash + this.getInitialInventoryValue(scrapValues)))
-    };
-
-    return this.pnlBreakdown;
   }
 
   getInitialInventoryValue(scrapValues) {
@@ -534,7 +620,9 @@ class Player {
       finalScore: this.finalScore,
       pnlBreakdown: this.pnlBreakdown,
       joinedAt: this.joinedAt,
-      isBot: this.isBot
+      isBot: this.isBot,
+      gameMode: this.gameMode,
+      position: this.position
     };
   }
 }

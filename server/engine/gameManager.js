@@ -17,18 +17,30 @@ class GameManager {
   /**
    * Create a new game
    */
-  createGame(hostPlayerId) {
+  createGame(hostPlayerId, gameMode = 'sandwich', question = null) {
     if (this.currentGame && this.currentGame.status !== 'ended') {
       return { success: false, error: 'A game is already in progress' };
     }
 
-    this.currentGame = new Game(hostPlayerId, this.config);
+    // Validate game mode
+    if (!['sandwich', 'randomProduct'].includes(gameMode)) {
+      return { success: false, error: 'Invalid game mode' };
+    }
+
+    // Validate question for Random Product mode
+    if (gameMode === 'randomProduct' && (!question || question.trim() === '')) {
+      return { success: false, error: 'Question is required for Random Product mode' };
+    }
+
+    this.currentGame = new Game(hostPlayerId, this.config, gameMode, question);
     this.dataStore.saveGame(this.currentGame);
 
     this.dataStore.logEvent({
       type: 'GAME_CREATED',
       gameId: this.currentGame.gameId,
       hostPlayerId,
+      gameMode,
+      question,
       timestamp: new Date().toISOString()
     });
 
@@ -109,7 +121,7 @@ class GameManager {
     // Only count human players toward the limit (bots are excluded when bot feature is active)
     const humanCount = this.dataStore.getPlayersByGame(this.currentGame.gameId)
       .filter(p => !p.isBot).length;
-    if (humanCount >= this.config.maxPlayers) {
+    if (humanCount >= this.currentGame.config.maxPlayers) {
       return { success: false, error: 'Game is full' };
     }
 
@@ -119,15 +131,30 @@ class GameManager {
       return { success: false, error: 'Name already taken' };
     }
 
-    // Generate starting inventory
-    const { inventory, value } = this.generateStartingInventory();
+    // Setup player based on game mode
+    let inventory, value, startingCash;
+
+    if (this.currentGame.gameMode === 'randomProduct') {
+      // Random Product mode: start with 0 inventory and 0 cash (infinite cash handled in trading logic)
+      inventory = { product: 0 };
+      value = 0;
+      startingCash = 0; // Infinite cash mode - cash tracking is just for PnL
+    } else {
+      // Sandwich Exchange mode: generate random starting inventory
+      const result = this.generateStartingInventory();
+      inventory = result.inventory;
+      value = result.value;
+      startingCash = this.config.startingCash;
+    }
 
     // Create player
     const player = new Player(
       this.currentGame.gameId,
       playerName,
-      this.config.startingCash,
-      inventory
+      startingCash,
+      inventory,
+      false, // isBot
+      this.currentGame.gameMode
     );
 
     // Add to game
@@ -144,11 +171,16 @@ class GameManager {
       playerName: player.name,
       startingInventory: inventory,
       startingInventoryValue: value,
-      startingCash: this.config.startingCash,
+      startingCash,
+      gameMode: this.currentGame.gameMode,
       timestamp: new Date().toISOString()
     });
 
-    console.log(`[GAME] Player ${playerName} joined with inventory worth ${value}`);
+    if (this.currentGame.gameMode === 'randomProduct') {
+      console.log(`[GAME] Player ${playerName} joined (Random Product mode - infinite cash)`);
+    } else {
+      console.log(`[GAME] Player ${playerName} joined with inventory worth ${value}`);
+    }
 
     return { success: true, player };
   }
@@ -260,6 +292,47 @@ class GameManager {
       this.gameTimer = null;
     }
 
+    // For Random Product mode, wait for host to submit correct value
+    if (this.currentGame.gameMode === 'randomProduct') {
+      this.currentGame.status = 'awaiting_value';
+      this.dataStore.saveGame(this.currentGame);
+
+      this.dataStore.logEvent({
+        type: 'GAME_AWAITING_VALUE',
+        gameId: this.currentGame.gameId,
+        timestamp: new Date().toISOString()
+      });
+
+      console.log('\n[GAME] ===== TIME EXPIRED =====');
+      console.log('[GAME] Waiting for host to submit correct value...');
+      console.log('[GAME] ===========================\n');
+
+      if (this.onGameEnd) {
+        this.onGameEnd(null); // Signal that we're awaiting value
+      }
+
+      return { success: true, awaitingValue: true };
+    }
+
+    // Sandwich Exchange mode: end immediately
+    return await this.finalizeGame();
+  }
+
+  /**
+   * Finalize the game with final scores (called after correct value is submitted for Random Product, or immediately for Sandwich Exchange)
+   */
+  async finalizeGame(correctValue = null) {
+    if (!this.currentGame) {
+      return { success: false, error: 'No game exists' };
+    }
+
+    if (this.currentGame.gameMode === 'randomProduct') {
+      if (correctValue === null || correctValue === undefined) {
+        return { success: false, error: 'Correct value is required for Random Product mode' };
+      }
+      this.currentGame.setCorrectValue(correctValue);
+    }
+
     // End the game
     this.currentGame.end();
     this.dataStore.saveGame(this.currentGame);
@@ -270,9 +343,11 @@ class GameManager {
 
     for (const player of players) {
       const pnlBreakdown = player.calculateFinalScore(
-        this.config.scrapValues,
-        this.config.setValue,
-        this.config.setRecipe
+        this.currentGame.config.scrapValues,
+        this.currentGame.config.setValue,
+        this.currentGame.config.setRecipe,
+        this.currentGame.gameMode,
+        this.currentGame.correctValue
       );
       this.dataStore.savePlayer(player);
 
@@ -294,14 +369,23 @@ class GameManager {
     this.dataStore.logEvent({
       type: 'GAME_ENDED',
       gameId: this.currentGame.gameId,
+      gameMode: this.currentGame.gameMode,
+      correctValue: this.currentGame.correctValue,
       leaderboard,
       timestamp: new Date().toISOString()
     });
 
     console.log('\n[GAME] ===== GAME ENDED =====');
+    if (this.currentGame.gameMode === 'randomProduct') {
+      console.log(`[GAME] Correct Value: ${correctValue}`);
+    }
     console.log('[GAME] Final Leaderboard:');
     for (const entry of leaderboard) {
-      console.log(`  ${entry.rank}. ${entry.name}: ${entry.totalScore} (${entry.completeSets} sets, PnL: ${entry.pnl >= 0 ? '+' : ''}${entry.pnl})`);
+      if (this.currentGame.gameMode === 'randomProduct') {
+        console.log(`  ${entry.rank}. ${entry.name}: ${entry.totalScore} (position: ${entry.position}, PnL: ${entry.pnl >= 0 ? '+' : ''}${entry.pnl})`);
+      } else {
+        console.log(`  ${entry.rank}. ${entry.name}: ${entry.totalScore} (${entry.completeSets} sets, PnL: ${entry.pnl >= 0 ? '+' : ''}${entry.pnl})`);
+      }
     }
     console.log('[GAME] ========================\n');
 
@@ -347,10 +431,12 @@ class GameManager {
     return {
       gameId: this.currentGame.gameId,
       status: this.currentGame.status,
+      gameMode: this.currentGame.gameMode,
+      question: this.currentGame.question,
       hostPlayerId: this.currentGame.hostPlayerId,
       remainingTime: this.currentGame.getRemainingTime(),
       playerCount: players.length,
-      maxPlayers: this.config.maxPlayers,
+      maxPlayers: this.currentGame.config.maxPlayers,
       players: players.map(p => ({
         playerId: p.playerId,
         name: p.name,
@@ -366,19 +452,27 @@ class GameManager {
     const player = this.dataStore.getPlayer(playerId);
     if (!player) return null;
 
-    return {
+    const state = {
       playerId: player.playerId,
       name: player.name,
       cash: player.cash,
       inventory: player.inventory,
-      inventoryValue: player.getInventoryScrapValue(this.config.scrapValues),
-      completeSets: player.getCompleteSets(this.config.setRecipe),
       openOrders: player.openOrderIds.map(id => {
         const order = this.dataStore.getOrder(id);
         return order ? order.toJSON() : null;
       }).filter(Boolean),
       tradeCount: player.tradeHistory.length
     };
+
+    // Add mode-specific fields
+    if (this.currentGame?.gameMode === 'randomProduct') {
+      state.position = player.getPosition();
+    } else {
+      state.inventoryValue = player.getInventoryScrapValue(this.currentGame?.config.scrapValues || {});
+      state.completeSets = player.getCompleteSets(this.currentGame?.config.setRecipe || {});
+    }
+
+    return state;
   }
 
   /**
@@ -404,14 +498,29 @@ class GameManager {
    * Get game configuration (public)
    */
   getPublicConfig() {
+    if (!this.currentGame) {
+      return {
+        gameDuration: this.config.gameDuration,
+        products: this.config.products,
+        scrapValues: this.config.scrapValues,
+        setValue: this.config.setValue,
+        setRecipe: this.config.setRecipe,
+        maxPlayers: this.config.maxPlayers,
+        bots: this.config.bots,
+        gameMode: 'sandwich'
+      };
+    }
+
     return {
-      gameDuration: this.config.gameDuration,
-      products: this.config.products,
-      scrapValues: this.config.scrapValues,
-      setValue: this.config.setValue,
-      setRecipe: this.config.setRecipe,
-      maxPlayers: this.config.maxPlayers,
-      bots: this.config.bots
+      gameDuration: this.currentGame.config.gameDuration,
+      products: this.currentGame.config.products,
+      scrapValues: this.currentGame.config.scrapValues,
+      setValue: this.currentGame.config.setValue,
+      setRecipe: this.currentGame.config.setRecipe,
+      maxPlayers: this.currentGame.config.maxPlayers,
+      bots: this.currentGame.config.bots,
+      gameMode: this.currentGame.gameMode,
+      question: this.currentGame.question
     };
   }
 }

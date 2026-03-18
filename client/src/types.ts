@@ -1,12 +1,17 @@
 // Game Types
 
+export type GameMode = 'sandwich' | 'randomProduct';
+
 export interface GameConfig {
+  gameMode: GameMode;
   gameDuration: number;
   products: string[];
   scrapValues: Record<string, number>;
   setValue: number;
   setRecipe: Record<string, number>;
   maxPlayers: number;
+  question?: string; // For Random Product mode
+  correctValue?: number; // For Random Product mode - set at end of game
   bots?: {
     maxBots: number;
     tradingInterval: { min: number; max: number };
@@ -16,12 +21,14 @@ export interface GameConfig {
 
 export interface GameState {
   gameId: string;
-  status: 'lobby' | 'running' | 'ended';
+  status: 'lobby' | 'running' | 'ended' | 'awaiting_value';
+  gameMode: GameMode;
   hostPlayerId: string;
   remainingTime: number;
   playerCount: number;
   maxPlayers: number;
   players: { playerId: string; name: string; isBot: boolean }[];
+  question?: string; // For Random Product mode
 }
 
 export interface PlayerState {
@@ -31,6 +38,7 @@ export interface PlayerState {
   inventory: Record<string, number>;
   inventoryValue: number;
   completeSets: number;
+  position?: number; // For Random Product mode: net position (positive = long, negative = short)
   openOrders: Order[];
   tradeCount: number;
 }

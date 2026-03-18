@@ -177,16 +177,20 @@ io.on('connection', (socket) => {
   // ===== GAME MANAGEMENT =====
 
   // Create a new game
-  socket.on('createGame', (callback) => {
+  socket.on('createGame', (data, callback) => {
     if (typeof callback !== 'function') return;
     const tempHostId = `host_${socket.id}`;
-    const result = gameManager.createGame(tempHostId);
+    const gameMode = data?.gameMode || 'sandwich';
+    const question = data?.question || null;
+
+    const result = gameManager.createGame(tempHostId, gameMode, question);
 
     if (result.success) {
       // Reset matching engine for new game
       matchingEngine.reset();
       io.emit('gameState', gameManager.getGameState());
-      console.log(`[SOCKET] Game created by ${socket.id}`);
+      io.emit('config', gameManager.getPublicConfig());
+      console.log(`[SOCKET] Game created by ${socket.id} (mode: ${gameMode})`);
     }
 
     callback(result);
@@ -327,6 +331,52 @@ io.on('connection', (socket) => {
     callback(result);
   });
 
+  // Submit correct value (host only, Random Product mode)
+  socket.on('submitCorrectValue', async (data, callback) => {
+    if (typeof callback !== 'function') return;
+    const playerId = socketToPlayer.get(socket.id);
+    if (!playerId) {
+      return callback({ success: false, error: 'Not in game' });
+    }
+
+    if (!gameManager.currentGame) {
+      return callback({ success: false, error: 'No active game' });
+    }
+
+    if (gameManager.currentGame.hostPlayerId !== playerId) {
+      return callback({ success: false, error: 'Only the host can submit the correct value' });
+    }
+
+    if (gameManager.currentGame.gameMode !== 'randomProduct') {
+      return callback({ success: false, error: 'Can only submit correct value in Random Product mode' });
+    }
+
+    if (gameManager.currentGame.status !== 'awaiting_value') {
+      return callback({ success: false, error: 'Game is not awaiting correct value' });
+    }
+
+    const correctValue = parseFloat(data?.correctValue);
+    if (isNaN(correctValue)) {
+      return callback({ success: false, error: 'Invalid correct value' });
+    }
+
+    // Finalize the game with the correct value
+    const result = await gameManager.finalizeGame(correctValue);
+
+    if (result.success) {
+      // Broadcast game end
+      io.emit('gameEnded', {
+        leaderboard: result.leaderboard,
+        correctValue: correctValue
+      });
+      io.emit('gameState', gameManager.getGameState());
+
+      console.log(`[SOCKET] Correct value submitted: ${correctValue}`);
+    }
+
+    callback(result);
+  });
+
   // Reset game (go back to lobby)
   socket.on('resetGame', (callback) => {
     if (typeof callback !== 'function') return;
@@ -399,7 +449,8 @@ io.on('connection', (socket) => {
       side,
       orderType,
       parsedQuantity,
-      price ? parseFloat(price) : null
+      price ? parseFloat(price) : null,
+      gameManager.currentGame.gameMode
     );
 
     if (result.errors.length > 0) {

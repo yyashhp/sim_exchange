@@ -202,3 +202,40 @@
   color: #fff;
   font-size: 1.1rem;
 }
+
+/* Position display for Random Product mode */
+.position-display {
+  text-align: center;
+  padding: 15px;
+  background: rgba(76, 175, 80, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(76, 175, 80, 0.2);
+}
+
+.position-value {
+  font-size: 2.5rem;
+  font-weight: bold;
+}
+
+.position-value.long {
+  color: #4CAF50;
+}
+
+.position-value.short {
+  color: #ff6b6b;
+}
+
+.position-label {
+  color: #888;
+  font-size: 0.85rem;
+  margin-top: 5px;
+  text-transform: uppercase;
+}
+
+.cash-note {
+  color: #888;
+  font-size: 0.75rem;
+  margin-top: 5px;
+  font-style: italic;
+}
+

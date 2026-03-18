@@ -136,9 +136,19 @@ const TradingGame: React.FC = () => {
 
       {/* Game Rules Reminder */}
       <div className="rules-reminder">
-        <strong>Goal:</strong> Form complete sandwiches (1 of each: 🍞🥬🧀🥩) worth ${config?.setValue || 30}.
-        Leftover ingredients: bread=${config?.scrapValues.bread}, veggies=${config?.scrapValues.veggies},
-        cheese=${config?.scrapValues.cheese}, meat=${config?.scrapValues.meat}
+        {config?.gameMode === 'randomProduct' ? (
+          <>
+            <strong>Question:</strong> {config.question || 'What will the value be?'}
+            <div className="mode-info">💰 Infinite cash - Position: {playerState?.position || 0}</div>
+          </>
+        ) : (
+          <>
+            <strong>Goal:</strong> Form complete sandwiches ({formatRecipe()}) worth ${config?.setValue || 30}.
+            <br />
+            Leftover ingredients: bread=${config?.scrapValues.bread}, veggies=${config?.scrapValues.veggies},
+            cheese=${config?.scrapValues.cheese}, meat=${config?.scrapValues.meat}
+          </>
+        )}
       </div>
     </div>
   );

@@ -215,7 +215,8 @@ class BotManager {
       action.side,
       action.orderType,
       action.quantity,
-      action.price ?? null
+      action.price ?? null,
+      game.gameMode || 'sandwich'
     );
 
     if (result.errors.length > 0) {
