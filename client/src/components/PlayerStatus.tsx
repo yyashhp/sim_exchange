@@ -16,18 +16,68 @@ const PlayerStatus: React.FC = () => {
 
   return (
     <div className="player-status">
-      <div className="status-section">
-        <h3>💰 Cash</h3>
-        <div className="cash-display">${playerState.cash}</div>
-      </div>
+      {config.gameMode === 'randomProduct' ? (
+        // Random Product mode
+        <>
+          <div className="status-section">
+            <h3>📊 Position</h3>
+            <div className="position-display">
+              <div className={`position-value ${(playerState.position || 0) >= 0 ? 'long' : 'short'}`}>
+                {playerState.position || 0}
+              </div>
+              <div className="position-label">
+                {(playerState.position || 0) > 0 ? 'Long' : (playerState.position || 0) < 0 ? 'Short' : 'Flat'}
+              </div>
+            </div>
+          </div>
 
-      <div className="status-section">
-        <h3>📦 Inventory</h3>
-        <div className="inventory-grid">
-          {config.products.map(product => (
-            <div key={product} className="inventory-item">
-              <span className="item-icon">
-                {product === 'bread' && '🍞'}
+          <div className="status-section">
+            <h3>💰 Cash</h3>
+            <div className="cash-display">${playerState.cash}</div>
+            <div className="cash-note">Infinite cash mode</div>
+          </div>
+
+          <div className="status-section">
+            <h3>📋 Open Orders ({playerState.openOrders.length})</h3>
+            <div className="orders-list">
+              {playerState.openOrders.length === 0 ? (
+                <div className="no-orders">No open orders</div>
+              ) : (
+                playerState.openOrders.map(order => (
+                  <div key={order.orderId} className={`order-item ${order.side}`}>
+                    <div className="order-info">
+                      <span className="order-side">{order.side.toUpperCase()}</span>
+                      <span className="order-qty">{order.remainingQuantity}</span>
+                      <span className="order-product">{order.product}</span>
+                      <span className="order-price">@ ${order.price}</span>
+                    </div>
+                    <button
+                      className="cancel-btn"
+                      onClick={() => handleCancelOrder(order.orderId)}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </>
+      ) : (
+        // Sandwich Exchange mode
+        <>
+          <div className="status-section">
+            <h3>💰 Cash</h3>
+            <div className="cash-display">${playerState.cash}</div>
+          </div>
+
+          <div className="status-section">
+            <h3>📦 Inventory</h3>
+            <div className="inventory-grid">
+              {config.products.map(product => (
+                <div key={product} className="inventory-item">
+                  <span className="item-icon">
+                    {product === 'bread' && '🍞'}
                 {product === 'veggies' && '🥬'}
                 {product === 'cheese' && '🧀'}
                 {product === 'meat' && '🥩'}
@@ -98,6 +148,8 @@ const PlayerStatus: React.FC = () => {
           <span>${playerState.cash + playerState.inventoryValue}</span>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 };

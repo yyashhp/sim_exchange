@@ -8,7 +8,7 @@ import RecentTrades from './RecentTrades';
 import './TradingGame.css';
 
 const TradingGame: React.FC = () => {
-  const { config, orderBooks, remainingTime, playerState } = useSocket();
+  const { config, orderBooks, remainingTime, playerState, gameState } = useSocket();
   const [selectedProduct, setSelectedProduct] = useState(config?.products[0] || 'bread');
   const [selectedPrice, setSelectedPrice] = useState<number | null>(null);
   const [selectedSide, setSelectedSide] = useState<'buy' | 'sell' | null>(null);
@@ -36,7 +36,7 @@ const TradingGame: React.FC = () => {
       {/* Header */}
       <header className="game-header">
         <div className="header-left">
-          <h1>🥪 Sandwich Exchange</h1>
+          <h1>{config?.gameMode === 'randomProduct' ? '🎯 Random Product' : '🥪 Sandwich Exchange'}</h1>
           <span className="player-name">{playerState?.name}</span>
         </div>
         <div className="timer" style={{ color: getTimeColor() }}>
@@ -45,14 +45,29 @@ const TradingGame: React.FC = () => {
         </div>
         <div className="header-right">
           <div className="quick-stats">
-            <div className="quick-stat">
-              <span className="stat-label">Cash</span>
-              <span className="stat-value">${playerState?.cash || 0}</span>
-            </div>
-            <div className="quick-stat">
-              <span className="stat-label">Sets</span>
-              <span className="stat-value">🥪 {playerState?.completeSets || 0}</span>
-            </div>
+            {config?.gameMode === 'randomProduct' ? (
+              <>
+                <div className="quick-stat">
+                  <span className="stat-label">Position</span>
+                  <span className="stat-value">{playerState?.position || 0}</span>
+                </div>
+                <div className="quick-stat">
+                  <span className="stat-label">Cash</span>
+                  <span className="stat-value">${playerState?.cash || 0}</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="quick-stat">
+                  <span className="stat-label">Cash</span>
+                  <span className="stat-value">${playerState?.cash || 0}</span>
+                </div>
+                <div className="quick-stat">
+                  <span className="stat-label">Sets</span>
+                  <span className="stat-value">🥪 {playerState?.completeSets || 0}</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -103,9 +118,18 @@ const TradingGame: React.FC = () => {
 
       {/* Game Rules Reminder */}
       <div className="rules-reminder">
-        <strong>Goal:</strong> Form complete sandwiches (1 of each: 🍞🥬🧀🥩) worth ${config?.setValue || 30}.
-        Leftover ingredients: bread=${config?.scrapValues.bread}, veggies=${config?.scrapValues.veggies},
-        cheese=${config?.scrapValues.cheese}, meat=${config?.scrapValues.meat}
+        {config?.gameMode === 'randomProduct' ? (
+          <>
+            <strong>Question:</strong> {config.question || 'What will the value be?'}
+            <div className="mode-info">💰 Infinite cash - Position: {playerState?.position || 0} {playerState?.position && playerState.position > 0 ? '(LONG)' : playerState?.position && playerState.position < 0 ? '(SHORT)' : '(FLAT)'}</div>
+          </>
+        ) : (
+          <>
+            <strong>Goal:</strong> Form complete sandwiches worth ${config?.setValue || 30}.
+            Leftover ingredients: bread=${config?.scrapValues.bread}, veggies=${config?.scrapValues.veggies},
+            cheese=${config?.scrapValues.cheese}, meat=${config?.scrapValues.meat}
+          </>
+        )}
       </div>
     </div>
   );
