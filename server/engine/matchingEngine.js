@@ -15,6 +15,7 @@ class MatchingEngine {
     this.dataStore = dataStore;
     this.config = config;
     this.orderBooks = new Map();
+    this.currentGameMode = 'sandwich'; // Track current game mode for validation
 
     // Initialize order books for each product
     for (const product of config.products) {
@@ -29,6 +30,9 @@ class MatchingEngine {
   submitOrder(gameId, player, product, side, orderType, quantity, price = null, gameMode = 'sandwich') {
     const errors = [];
     const trades = [];
+
+    // Store gameMode for use in matching
+    this.currentGameMode = gameMode;
 
     // Get game to check products list
     const game = this.dataStore.getGame(gameId);
@@ -191,14 +195,16 @@ class MatchingEngine {
 
     const tradeValue = quantity * price;
 
-    // Check resources one more time
-    if (buyer.cash < tradeValue) {
-      console.log(`[ENGINE] Buyer ${buyerId} has insufficient cash for trade`);
-      return null;
-    }
-    if ((seller.inventory[incomingOrder.product] || 0) < quantity) {
-      console.log(`[ENGINE] Seller ${sellerId} has insufficient inventory for trade`);
-      return null;
+    // Check resources one more time (SKIP for Random Product mode - allows negative cash and shorting)
+    if (this.currentGameMode !== 'randomProduct') {
+      if (buyer.cash < tradeValue) {
+        console.log(`[ENGINE] Buyer ${buyerId} has insufficient cash for trade`);
+        return null;
+      }
+      if ((seller.inventory[incomingOrder.product] || 0) < quantity) {
+        console.log(`[ENGINE] Seller ${sellerId} has insufficient inventory for trade`);
+        return null;
+      }
     }
 
     // Execute the trade
@@ -370,6 +376,7 @@ class MatchingEngine {
     for (const product of this.config.products) {
       this.orderBooks.set(product, new OrderBook(product));
     }
+    this.currentGameMode = 'sandwich'; // Reset to default
     console.log('[ENGINE] Order books reset');
   }
 
