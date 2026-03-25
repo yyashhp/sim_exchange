@@ -1,7 +1,14 @@
 node_modules/
 client/build/
+.env
 .env.local
+.env.*.local
 .DS_Store
 *.log
 server/package-lock.json
 client/package-lock.json
+
+# Database files
+*.db
+*.db-shm
+*.db-wal

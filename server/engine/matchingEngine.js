@@ -26,12 +26,16 @@ class MatchingEngine {
    * Submit a new order
    * @returns {{ order: Order, trades: Trade[], errors: string[] }}
    */
-  submitOrder(gameId, player, product, side, orderType, quantity, price = null) {
+  submitOrder(gameId, player, product, side, orderType, quantity, price = null, gameMode = 'sandwich') {
     const errors = [];
     const trades = [];
 
+    // Get game to check products list
+    const game = this.dataStore.getGame(gameId);
+    const productsToCheck = game?.config?.products || this.config.products;
+
     // Validation
-    if (!this.config.products.includes(product)) {
+    if (!productsToCheck.includes(product)) {
       errors.push(`Invalid product: ${product}`);
       return { order: null, trades, errors };
     }
@@ -46,17 +50,19 @@ class MatchingEngine {
       return { order: null, trades, errors };
     }
 
-    // Check if player has enough resources
-    if (side === 'buy') {
-      const requiredCash = orderType === 'limit' ? quantity * price : this.estimateMarketBuyCost(product, quantity);
-      if (player.cash < requiredCash) {
-        errors.push(`Insufficient cash. Required: ${requiredCash}, Available: ${player.cash}`);
-        return { order: null, trades, errors };
-      }
-    } else {
-      if ((player.inventory[product] || 0) < quantity) {
-        errors.push(`Insufficient ${product}. Required: ${quantity}, Available: ${player.inventory[product] || 0}`);
-        return { order: null, trades, errors };
+    // Check if player has enough resources (SKIP for Random Product mode - infinite cash/shorting allowed)
+    if (gameMode !== 'randomProduct') {
+      if (side === 'buy') {
+        const requiredCash = orderType === 'limit' ? quantity * price : this.estimateMarketBuyCost(product, quantity);
+        if (player.cash < requiredCash) {
+          errors.push(`Insufficient cash. Required: ${requiredCash}, Available: ${player.cash}`);
+          return { order: null, trades, errors };
+        }
+      } else {
+        if ((player.inventory[product] || 0) < quantity) {
+          errors.push(`Insufficient ${product}. Required: ${quantity}, Available: ${player.inventory[product] || 0}`);
+          return { order: null, trades, errors };
+        }
       }
     }
 

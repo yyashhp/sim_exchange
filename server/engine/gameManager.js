@@ -17,12 +17,12 @@ class GameManager {
   /**
    * Create a new game
    */
-  createGame(hostPlayerId) {
+  createGame(hostPlayerId, gameMode = 'sandwich') {
     if (this.currentGame && this.currentGame.status !== 'ended') {
       return { success: false, error: 'A game is already in progress' };
     }
 
-    this.currentGame = new Game(hostPlayerId, this.config);
+    this.currentGame = new Game(hostPlayerId, this.config, gameMode);
     this.dataStore.saveGame(this.currentGame);
 
     this.dataStore.logEvent({
@@ -339,6 +339,7 @@ class GameManager {
     return {
       gameId: this.currentGame.gameId,
       status: this.currentGame.status,
+      gameMode: this.currentGame.gameMode,
       hostPlayerId: this.currentGame.hostPlayerId,
       remainingTime: this.currentGame.getRemainingTime(),
       playerCount: players.length,
@@ -397,6 +398,7 @@ class GameManager {
    */
   getPublicConfig() {
     return {
+      gameMode: this.currentGame?.gameMode || 'sandwich',
       gameDuration: this.config.gameDuration,
       products: this.config.products,
       scrapValues: this.config.scrapValues,

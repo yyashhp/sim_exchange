@@ -16,7 +16,7 @@ const os = require('os');
 const config = require('./config.json');
 
 // Import modules
-const { DataStore } = require('./models');
+const { DataStore, SQLiteAdapter, PostgreSQLAdapter } = require('./models');
 const GameManager = require('./engine/gameManager');
 const MatchingEngine = require('./engine/matchingEngine');
 const BotManager = require('./bots/botManager');
@@ -40,7 +40,45 @@ const clientBuildPath = path.join(__dirname, '../client/build');
 app.use(express.static(clientBuildPath));
 
 // Initialize data store and engines
-const dataStore = new DataStore();
+// Auto-detect database adapter:
+// 1. If DATABASE_URL is set → Use PostgreSQL (centralized cloud database)
+// 2. If USE_MEMORY_DB=true → Use in-memory (no persistence)
+// 3. Otherwise → Use SQLite (local file database)
+const useMemoryDb = process.env.USE_MEMORY_DB === 'true';
+const usePg = !!process.env.DATABASE_URL;
+
+let dbAdapter = null;
+if (!useMemoryDb) {
+  if (usePg) {
+    dbAdapter = new PostgreSQLAdapter();
+    console.log('[SERVER] 🌐 Using PostgreSQL - CENTRALIZED cloud database');
+    console.log('[SERVER] 📊 All game servers will share the same data!');
+  } else {
+    dbAdapter = new SQLiteAdapter();
+    console.log('[SERVER] 💾 Using SQLite - LOCAL file database');
+    console.log('[SERVER] 📁 Data stored on this machine only');
+    console.log('[SERVER] 💡 Tip: Set DATABASE_URL to use centralized PostgreSQL');
+  }
+}
+
+const dataStore = new DataStore(dbAdapter);
+
+if (useMemoryDb) {
+  console.log('[SERVER] 🧠 Using in-memory storage (data will not persist)');
+} else if (dbAdapter) {
+  // Get stats (async for PostgreSQL)
+  const statsPromise = dbAdapter.getStats();
+  if (statsPromise instanceof Promise) {
+    statsPromise.then(stats => {
+      console.log('[SERVER] Database stats:', stats);
+    }).catch(err => {
+      console.error('[SERVER] Failed to get stats:', err.message);
+    });
+  } else {
+    console.log('[SERVER] Database stats:', statsPromise);
+  }
+}
+
 const gameManager = new GameManager(dataStore, config);
 const matchingEngine = new MatchingEngine(dataStore, config);
 const botManager = new BotManager(dataStore, gameManager, matchingEngine, config);
@@ -95,6 +133,20 @@ app.get('/api/game/:gameId/export', (req, res) => {
   res.json(data);
 });
 
+// Get database statistics
+app.get('/api/database/stats', (req, res) => {
+  if (useMemoryDb) {
+    return res.json({
+      mode: 'in-memory',
+      message: 'Using in-memory storage - no persistent database'
+    });
+  }
+  res.json({
+    mode: 'sqlite',
+    ...dbAdapter.getStats()
+  });
+});
+
 // Catch-all: serve React app for any non-API routes
 app.get('*', (req, res) => {
   res.sendFile(path.join(clientBuildPath, 'index.html'));
@@ -122,16 +174,17 @@ io.on('connection', (socket) => {
   // ===== GAME MANAGEMENT =====
 
   // Create a new game
-  socket.on('createGame', (callback) => {
+  socket.on('createGame', (data, callback) => {
     if (typeof callback !== 'function') return;
     const tempHostId = `host_${socket.id}`;
-    const result = gameManager.createGame(tempHostId);
+    const gameMode = data?.gameMode || 'sandwich';
+    const result = gameManager.createGame(tempHostId, gameMode);
 
     if (result.success) {
       // Reset matching engine for new game
       matchingEngine.reset();
       io.emit('gameState', gameManager.getGameState());
-      console.log(`[SOCKET] Game created by ${socket.id}`);
+      console.log(`[SOCKET] Game created by ${socket.id} (mode: ${gameMode})`);
     }
 
     callback(result);
@@ -344,7 +397,8 @@ io.on('connection', (socket) => {
       side,
       orderType,
       parsedQuantity,
-      price ? parseFloat(price) : null
+      price ? parseFloat(price) : null,
+      gameManager.currentGame.gameMode || 'sandwich'
     );
 
     if (result.errors.length > 0) {
@@ -588,3 +642,21 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log('In production, the built client is served from port ' + PORT);
   console.log('\n========================================\n');
 });
+
+// Graceful shutdown
+const gracefulShutdown = async () => {
+  console.log('\n[SERVER] Shutting down gracefully...');
+  if (dbAdapter && !useMemoryDb) {
+    const closeResult = dbAdapter.close();
+    if (closeResult instanceof Promise) {
+      await closeResult;
+    }
+  }
+  server.close(() => {
+    console.log('[SERVER] Server closed');
+    process.exit(0);
+  });
+};
+
+process.on('SIGINT', gracefulShutdown);
+process.on('SIGTERM', gracefulShutdown);
