@@ -230,11 +230,13 @@ class DataStore {
 // ==================== GAME MODEL ====================
 
 class Game {
-  constructor(hostPlayerId, config, gameMode = 'sandwich') {
+  constructor(hostPlayerId, config, gameMode = 'sandwich', question = null) {
     this.gameId = uuidv4();
     this.hostPlayerId = hostPlayerId;
-    this.status = 'lobby'; // 'lobby' | 'running' | 'ended'
+    this.status = 'lobby'; // 'lobby' | 'running' | 'ended' | 'awaiting_value'
     this.gameMode = gameMode; // 'sandwich' | 'randomProduct'
+    this.question = question; // For Random Product mode
+    this.correctValue = null; // For Random Product mode - set at end of game
     this.config = config;
     this.playerIds = [];
     this.startTime = null;
@@ -274,6 +276,8 @@ class Game {
       hostPlayerId: this.hostPlayerId,
       status: this.status,
       gameMode: this.gameMode,
+      question: this.question,
+      correctValue: this.correctValue,
       config: this.config,
       playerIds: this.playerIds,
       startTime: this.startTime,
@@ -286,7 +290,7 @@ class Game {
 // ==================== PLAYER MODEL ====================
 
 class Player {
-  constructor(gameId, name, startingCash, startingInventory) {
+  constructor(gameId, name, startingCash, startingInventory, gameMode = 'sandwich') {
     this.playerId = uuidv4();
     this.gameId = gameId;
     this.name = name;
@@ -300,6 +304,8 @@ class Player {
     this.finalScore = null;
     this.pnlBreakdown = null;
     this.joinedAt = new Date().toISOString();
+    this.gameMode = gameMode;
+    this.position = 0; // For Random Product mode
   }
 
   getInventoryScrapValue(scrapValues) {
@@ -319,7 +325,33 @@ class Player {
     return minSets === Infinity ? 0 : minSets;
   }
 
-  calculateFinalScore(scrapValues, setValue, setRecipe) {
+  getPosition() {
+    if (this.gameMode !== 'randomProduct') return 0;
+    return this.inventory['product'] || 0;
+  }
+
+  calculateFinalScore(scrapValues, setValue, setRecipe, gameMode = 'sandwich', correctValue = null) {
+    if (gameMode === 'randomProduct') {
+      // Random Product mode: PnL based on position * correct value
+      const position = this.getPosition();
+      const positionValue = position * (correctValue || 0);
+      const totalScore = this.cash + positionValue;
+      const pnl = totalScore - this.initialCash;
+
+      this.finalScore = totalScore;
+      this.pnlBreakdown = {
+        cash: this.cash,
+        position,
+        positionValue,
+        correctValue,
+        totalScore,
+        pnl
+      };
+
+      return this.pnlBreakdown;
+    }
+
+    // Sandwich Exchange mode
     const completeSets = this.getCompleteSets(setRecipe);
 
     const remainingInventory = { ...this.inventory };
