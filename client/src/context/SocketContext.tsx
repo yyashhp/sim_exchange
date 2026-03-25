@@ -15,12 +15,13 @@ interface SocketContextType {
   finalScore: PnLBreakdown | null;
 
   // Actions
-  createGame: () => Promise<any>;
+  createGame: (gameMode?: string, question?: string) => Promise<any>;
   joinGame: (name: string) => Promise<any>;
   startGame: () => Promise<any>;
   placeOrder: (product: string, side: 'buy' | 'sell', orderType: 'limit' | 'market', quantity: number, price?: number) => Promise<any>;
   cancelOrder: (orderId: string) => Promise<any>;
   resetGame: () => Promise<any>;
+  submitCorrectValue: (correctValue: number) => Promise<any>;
 }
 
 const SocketContext = createContext<SocketContextType | null>(null);
@@ -127,9 +128,9 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     };
   }, []);
 
-  const createGame = useCallback(() => {
+  const createGame = useCallback((gameMode: string = 'sandwich', question?: string) => {
     return new Promise((resolve) => {
-      socket?.emit('createGame', resolve);
+      socket?.emit('createGame', { gameMode, question }, resolve);
     });
   }, [socket]);
 
@@ -163,6 +164,12 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     });
   }, [socket]);
 
+  const submitCorrectValue = useCallback((correctValue: number) => {
+    return new Promise((resolve) => {
+      socket?.emit('submitCorrectValue', { correctValue }, resolve);
+    });
+  }, [socket]);
+
   const resetGame = useCallback(() => {
     return new Promise((resolve) => {
       socket?.emit('resetGame', resolve);
@@ -185,6 +192,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     startGame,
     placeOrder,
     cancelOrder,
+    submitCorrectValue,
     resetGame,
   };
 

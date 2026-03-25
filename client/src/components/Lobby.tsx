@@ -7,11 +7,17 @@ const Lobby: React.FC = () => {
   const [playerName, setPlayerName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [gameMode, setGameMode] = useState<'sandwich' | 'randomProduct'>('sandwich');
+  const [question, setQuestion] = useState('');
 
   const handleCreateGame = async () => {
+    if (gameMode === 'randomProduct' && !question.trim()) {
+      setError('Please enter a question for Random Product mode');
+      return;
+    }
     setLoading(true);
     setError('');
-    const result: any = await createGame();
+    const result: any = await createGame(gameMode, question.trim());
     setLoading(false);
     if (!result.success) {
       setError(result.error);
@@ -51,7 +57,40 @@ const Lobby: React.FC = () => {
       <div className="lobby">
         <div className="lobby-card">
           <h1>🥪 Sandwich Trading Exchange</h1>
-          <p className="subtitle">Trade ingredients, form sandwiches, maximize profit!</p>
+          <p className="subtitle">Select a game mode and create a new game</p>
+
+          <div className="game-mode-selection">
+            <h3>Game Mode</h3>
+            <div className="mode-buttons">
+              <button
+                className={`btn mode-btn ${gameMode === 'sandwich' ? 'active' : ''}`}
+                onClick={() => setGameMode('sandwich')}
+              >
+                🥪 Sandwich Exchange
+              </button>
+              <button
+                className={`btn mode-btn ${gameMode === 'randomProduct' ? 'active' : ''}`}
+                onClick={() => setGameMode('randomProduct')}
+              >
+                🎯 Random Product
+              </button>
+            </div>
+          </div>
+
+          {gameMode === 'randomProduct' && (
+            <div className="question-input">
+              <label htmlFor="question">Question:</label>
+              <input
+                id="question"
+                type="text"
+                placeholder="e.g., What is the close price of oil today?"
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                maxLength={200}
+                disabled={loading}
+              />
+            </div>
+          )}
 
           <button
             className="btn btn-primary btn-large"
@@ -65,17 +104,24 @@ const Lobby: React.FC = () => {
 
           {config && (
             <div className="game-rules">
-              <h3>Game Rules</h3>
+              <h3>{gameMode === 'sandwich' ? 'Sandwich Exchange Rules' : 'Random Product Rules'}</h3>
               <ul>
-                <li>⏱️ Trade for {config.gameDuration} seconds</li>
-                <li>🧺 Form complete sandwiches worth ${config.setValue}</li>
-                <li>📦 Leftover ingredients valued at scrap prices:</li>
-                <ul>
-                  {config.products.map(p => (
-                    <li key={p}>{p}: ${config.scrapValues[p]}</li>
-                  ))}
-                </ul>
-                <li>🎯 Goal: Maximize your final portfolio value!</li>
+                {gameMode === 'sandwich' ? (
+                  <>
+                    <li>⏱️ Trade for {config.gameDuration} seconds</li>
+                    <li>🧺 Form complete sandwiches from random ingredients</li>
+                    <li>📦 Leftover ingredients valued at scrap prices</li>
+                    <li>🎯 Goal: Maximize your final portfolio value!</li>
+                  </>
+                ) : (
+                  <>
+                    <li>⏱️ Trade for {config.gameDuration} seconds</li>
+                    <li>💰 Infinite cash - can go long or short</li>
+                    <li>🎯 Trade based on your prediction</li>
+                    <li>📊 Host enters correct value at end</li>
+                    <li>💵 PnL calculated from your position</li>
+                  </>
+                )}
               </ul>
             </div>
           )}

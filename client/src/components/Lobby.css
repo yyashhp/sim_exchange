@@ -188,3 +188,71 @@
   font-style: italic;
   margin-top: 20px;
 }
+
+/* Game mode selection */
+.game-mode-selection {
+  margin-bottom: 20px;
+}
+
+.game-mode-selection h3 {
+  color: #fff;
+  margin-bottom: 12px;
+}
+
+.mode-buttons {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.mode-btn {
+  flex: 1;
+  padding: 15px 20px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ccc;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mode-btn:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.mode-btn.active {
+  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+  color: white;
+  border-color: #4CAF50;
+  box-shadow: 0 5px 20px rgba(76, 175, 80, 0.4);
+}
+
+.question-input {
+  text-align: left;
+  margin-bottom: 20px;
+}
+
+.question-input label {
+  display: block;
+  color: #fff;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.question-input input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 1rem;
+}
+
+.question-input input:focus {
+  outline: none;
+  border-color: #4CAF50;
+}

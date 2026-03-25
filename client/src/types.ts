@@ -1,22 +1,28 @@
 // Game Types
 
+export type GameMode = 'sandwich' | 'randomProduct';
+
 export interface GameConfig {
+  gameMode?: GameMode;
   gameDuration: number;
   products: string[];
   scrapValues: Record<string, number>;
   setValue: number;
   setRecipe: Record<string, number>;
   maxPlayers: number;
+  question?: string;
 }
 
 export interface GameState {
   gameId: string;
-  status: 'lobby' | 'running' | 'ended';
+  status: 'lobby' | 'running' | 'ended' | 'awaiting_value';
+  gameMode?: GameMode;
   hostPlayerId: string;
   remainingTime: number;
   playerCount: number;
   maxPlayers: number;
   players: { playerId: string; name: string }[];
+  question?: string;
 }
 
 export interface PlayerState {
@@ -24,8 +30,9 @@ export interface PlayerState {
   name: string;
   cash: number;
   inventory: Record<string, number>;
-  inventoryValue: number;
-  completeSets: number;
+  inventoryValue?: number;
+  completeSets?: number;
+  position?: number; // For Random Product mode
   openOrders: Order[];
   tradeCount: number;
 }
@@ -88,9 +95,12 @@ export interface LeaderboardEntry {
 
 export interface PnLBreakdown {
   cash: number;
-  completeSets: number;
-  setsValue: number;
-  scrapValue: number;
+  completeSets?: number; // Sandwich mode
+  setsValue?: number; // Sandwich mode
+  scrapValue?: number; // Sandwich mode
+  position?: number; // Random Product mode
+  positionValue?: number; // Random Product mode
+  correctValue?: number; // Random Product mode
   totalScore: number;
   pnl: number;
 }
