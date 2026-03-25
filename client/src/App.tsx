@@ -21,8 +21,8 @@ const AppContent: React.FC = () => {
     );
   }
 
-  // Game ended
-  if (gameState?.status === 'ended' && playerState) {
+  // Game ended or awaiting correct value
+  if ((gameState?.status === 'ended' || gameState?.status === 'awaiting_value') && playerState) {
     return <GameEnd />;
   }
 
