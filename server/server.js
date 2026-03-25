@@ -166,16 +166,17 @@ io.on('connection', (socket) => {
   // ===== GAME MANAGEMENT =====
 
   // Create a new game
-  socket.on('createGame', (callback) => {
+  socket.on('createGame', (data, callback) => {
     if (typeof callback !== 'function') return;
     const tempHostId = `host_${socket.id}`;
-    const result = gameManager.createGame(tempHostId);
+    const gameMode = data?.gameMode || 'sandwich';
+    const result = gameManager.createGame(tempHostId, gameMode);
 
     if (result.success) {
       // Reset matching engine for new game
       matchingEngine.reset();
       io.emit('gameState', gameManager.getGameState());
-      console.log(`[SOCKET] Game created by ${socket.id}`);
+      console.log(`[SOCKET] Game created by ${socket.id} (mode: ${gameMode})`);
     }
 
     callback(result);
@@ -315,7 +316,8 @@ io.on('connection', (socket) => {
       side,
       orderType,
       parsedQuantity,
-      price ? parseFloat(price) : null
+      price ? parseFloat(price) : null,
+      gameManager.currentGame.gameMode || 'sandwich'
     );
 
     if (result.errors.length > 0) {

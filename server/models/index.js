@@ -230,10 +230,11 @@ class DataStore {
 // ==================== GAME MODEL ====================
 
 class Game {
-  constructor(hostPlayerId, config) {
+  constructor(hostPlayerId, config, gameMode = 'sandwich') {
     this.gameId = uuidv4();
     this.hostPlayerId = hostPlayerId;
     this.status = 'lobby'; // 'lobby' | 'running' | 'ended'
+    this.gameMode = gameMode; // 'sandwich' | 'randomProduct'
     this.config = config;
     this.playerIds = [];
     this.startTime = null;
@@ -272,6 +273,7 @@ class Game {
       gameId: this.gameId,
       hostPlayerId: this.hostPlayerId,
       status: this.status,
+      gameMode: this.gameMode,
       config: this.config,
       playerIds: this.playerIds,
       startTime: this.startTime,
