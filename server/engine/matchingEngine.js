@@ -41,6 +41,9 @@ class MatchingEngine {
     // Store gameMode for use in matching
     this.currentGameMode = gameMode;
 
+    // Debug logging
+    console.log(`[ENGINE] submitOrder called with gameMode: '${gameMode}', player cash: ${player.cash}, product: '${product}', side: ${side}`);
+
     // Validation - use the appropriate config
     const game = this.dataStore.getGame(gameId);
     const productsToCheck = game?.config?.products || this.config.products;
@@ -61,6 +64,7 @@ class MatchingEngine {
     }
 
     // Check if player has enough resources (skip for Random Product mode - infinite cash/can go short)
+    console.log(`[ENGINE] Checking resources: gameMode='${gameMode}', skip validation: ${gameMode === 'randomProduct'}`);
     if (gameMode !== 'randomProduct') {
       if (side === 'buy') {
         const requiredCash = orderType === 'limit' ? quantity * price : this.estimateMarketBuyCost(product, quantity);
