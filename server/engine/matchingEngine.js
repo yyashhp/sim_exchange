@@ -92,6 +92,12 @@ class MatchingEngine {
       price
     );
 
+    // Ensure order book exists for this product (important for Random Product mode)
+    if (!this.orderBooks.has(product)) {
+      console.log(`[ENGINE] Creating order book for new product: ${product}`);
+      this.orderBooks.set(product, new OrderBook(product));
+    }
+
     // Try to match the order
     const matchResult = this.matchOrder(order, player);
     trades.push(...matchResult.trades);
@@ -357,7 +363,8 @@ class MatchingEngine {
    */
   getAllOrderBooks() {
     const books = {};
-    for (const product of this.config.products) {
+    // Use actual order books (supports dynamic products like Random Product mode)
+    for (const [product, orderBook] of this.orderBooks) {
       books[product] = this.getOrderBookDepth(product);
     }
     return books;
