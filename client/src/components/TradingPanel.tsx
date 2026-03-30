@@ -76,6 +76,13 @@ const TradingPanel: React.FC<TradingPanelProps> = ({
     if (!playerState) return false;
     const qty = parseInt(quantity);
     if (isNaN(qty) || qty <= 0) return false;
+
+    // In Random Product mode, always allow orders (unlimited cash/shorting)
+    if (config?.gameMode === 'randomProduct') {
+      return true;
+    }
+
+    // Sandwich Exchange mode - check resources
     if (side === 'buy') {
       if (orderType === 'market') {
         // For market orders, just check player has some cash
