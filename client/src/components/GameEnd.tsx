@@ -9,7 +9,7 @@ const GameEnd: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  const myRank = leaderboard.findIndex(e => e.playerId === playerState?.playerId) + 1;
+  const myRank = leaderboard?.findIndex(e => e.playerId === playerState?.playerId) + 1 || 0;
   const isHost = playerState && gameState && gameState.hostPlayerId === playerState.playerId;
 
   const handleNewGame = async () => {

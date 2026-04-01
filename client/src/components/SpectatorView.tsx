@@ -34,7 +34,7 @@ const SpectatorView: React.FC = () => {
       {/* Header */}
       <header className="spectator-header">
         <div className="header-left">
-          <h1>🥪 Sandwich Exchange</h1>
+          <h1>{config?.gameMode === 'randomProduct' ? '📊 Random Product' : '🥪 Sandwich Exchange'}</h1>
           <span className="spectator-badge">👁 SPECTATING</span>
         </div>
 
@@ -70,7 +70,7 @@ const SpectatorView: React.FC = () => {
         <div className="spectator-books">
           <h2>Order Books</h2>
           <div className="spectator-books-grid">
-            {config?.products.map(product => (
+            {(config?.products || []).map(product => (
               <OrderBook
                 key={product}
                 orderBook={orderBooks[product] || {
@@ -97,8 +97,8 @@ const SpectatorView: React.FC = () => {
       {/* Info bar */}
       <div className="spectator-info-bar">
         {isEnded
-          ? `Final standings — ${leaderboard.length} player${leaderboard.length !== 1 ? 's' : ''} competed`
-          : `Watching live · ${leaderboard.length} player${leaderboard.length !== 1 ? 's' : ''} trading`}
+          ? `Final standings — ${leaderboard?.length || 0} player${(leaderboard?.length || 0) !== 1 ? 's' : ''} competed`
+          : `Watching live · ${leaderboard?.length || 0} player${(leaderboard?.length || 0) !== 1 ? 's' : ''} trading`}
       </div>
     </div>
   );

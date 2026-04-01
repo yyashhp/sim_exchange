@@ -12,7 +12,7 @@ const Leaderboard: React.FC = () => {
       <h3>🏆 {isGameEnded ? 'Final Results' : 'Live Standings'}</h3>
 
       <div className="leaderboard-list">
-        {leaderboard.map((entry, index) => (
+        {(leaderboard || []).map((entry, index) => (
           <div
             key={entry.playerId}
             className={`leaderboard-item ${entry.playerId === playerState?.playerId ? 'you' : ''} ${index === 0 ? 'leader' : ''}`}
@@ -58,7 +58,7 @@ const Leaderboard: React.FC = () => {
           </div>
         ))}
 
-        {leaderboard.length === 0 && (
+        {(!leaderboard || leaderboard.length === 0) && (
           <div className="no-data">No players yet</div>
         )}
       </div>
