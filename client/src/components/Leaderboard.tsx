@@ -3,9 +3,10 @@ import { useSocket } from '../context/SocketContext';
 import './Leaderboard.css';
 
 const Leaderboard: React.FC = () => {
-  const { leaderboard, playerState, gameState } = useSocket();
+  const { leaderboard, playerState, gameState, config } = useSocket();
 
   const isGameEnded = gameState?.status === 'ended';
+  const isRandomProduct = config?.gameMode === 'randomProduct';
 
   return (
     <div className="leaderboard">
@@ -37,10 +38,12 @@ const Leaderboard: React.FC = () => {
                       {(entry.pnl || 0) >= 0 ? '+' : ''}${(entry.pnl || 0).toFixed(2)}
                     </span>
                   </div>
-                  <div className="stat">
-                    <span className="stat-label">Sets</span>
-                    <span className="stat-value">🥪 {entry.completeSets}</span>
-                  </div>
+                  {!isRandomProduct && (
+                    <div className="stat">
+                      <span className="stat-label">Sets</span>
+                      <span className="stat-value">🥪 {entry.completeSets}</span>
+                    </div>
+                  )}
                 </>
               ) : (
                 <>
@@ -48,10 +51,12 @@ const Leaderboard: React.FC = () => {
                     <span className="stat-label">Est. Value</span>
                     <span className="stat-value">${(entry.estimatedValue || 0).toFixed(2)}</span>
                   </div>
-                  <div className="stat">
-                    <span className="stat-label">Sets</span>
-                    <span className="stat-value">🥪 {entry.completeSets}</span>
-                  </div>
+                  {!isRandomProduct && (
+                    <div className="stat">
+                      <span className="stat-label">Sets</span>
+                      <span className="stat-value">🥪 {entry.completeSets}</span>
+                    </div>
+                  )}
                 </>
               )}
             </div>
